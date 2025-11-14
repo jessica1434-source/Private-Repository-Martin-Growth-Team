@@ -11,6 +11,7 @@ import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
 import AddManagerDialog from "@/components/AddManagerDialog";
 import AddFamilyDialog from "@/components/AddFamilyDialog";
+import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Language } from "@/lib/i18n";
@@ -28,6 +29,8 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
   const [addManagerOpen, setAddManagerOpen] = useState(false);
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
+  const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
+  const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
 
   //todo: remove mock functionality
   const totalChildren = mockChildren.length;
@@ -106,6 +109,13 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
       childrenCount,
     };
   });
+
+  const handleEditFamily = (familyId: string) => {
+    setSelectedFamilyId(familyId);
+    setEditFamilyStatusOpen(true);
+  };
+
+  const selectedFamily = mockFamilies.find(f => f.id === selectedFamilyId);
 
   return (
     <div className="min-h-screen bg-background">
@@ -252,7 +262,7 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
                   families={familyTableData}
                   language={language}
                   onView={(id) => console.log('View family:', id)}
-                  onEdit={(id) => console.log('Edit family:', id)}
+                  onEdit={handleEditFamily}
                 />
               </CardContent>
             </Card>
@@ -274,6 +284,18 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
         managers={mockManagers}
         onSave={(data) => console.log('Family saved:', data)}
       />
+
+      {selectedFamily && (
+        <FamilyStatusDialog
+          open={editFamilyStatusOpen}
+          onOpenChange={setEditFamilyStatusOpen}
+          familyName={selectedFamily.familyName}
+          currentStatus={selectedFamily.complianceStatus as 'red' | 'yellow' | 'green'}
+          currentNotes={selectedFamily.managerNotes || ''}
+          language={language}
+          onSave={(data) => console.log('Family status updated:', { familyId: selectedFamilyId, ...data })}
+        />
+      )}
     </div>
   );
 }
