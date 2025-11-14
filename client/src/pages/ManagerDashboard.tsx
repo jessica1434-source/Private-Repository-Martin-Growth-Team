@@ -10,25 +10,27 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
-import { mockFamilies, mockChildren, mockGrowthRecords } from "@/lib/mockData";
+import { mockManagers, mockFamilies, mockChildren, mockGrowthRecords } from "@/lib/mockData";
 
 interface ManagerDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
+  managerId: string;
   onBack: () => void;
 }
 
-export default function ManagerDashboard({ language, onLanguageChange, onBack }: ManagerDashboardProps) {
+export default function ManagerDashboard({ language, onLanguageChange, managerId, onBack }: ManagerDashboardProps) {
   const t = useTranslation(language);
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [selectedFamily, setSelectedFamily] = useState<string>('');
 
-  //todo: remove mock functionality - simulating manager ID and using state
-  const managerId = '1';
+  //todo: remove mock functionality - using state to manage data
   const [families, setFamilies] = useState(mockFamilies);
   const [growthRecords, setGrowthRecords] = useState(mockGrowthRecords);
+  
+  const currentManager = mockManagers.find(m => m.id === managerId);
 
   const myFamilies = families.filter(f => f.managerId === managerId);
   const myChildren = mockChildren.filter(child => 
@@ -93,7 +95,12 @@ export default function ManagerDashboard({ language, onLanguageChange, onBack }:
             <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back">
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl md:text-2xl font-semibold">{t.myFamilies}</h1>
+            <div>
+              <h1 className="text-xl md:text-2xl font-semibold">{t.myFamilies}</h1>
+              {currentManager && (
+                <p className="text-sm text-muted-foreground">{currentManager.name}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
