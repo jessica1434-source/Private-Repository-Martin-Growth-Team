@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Baby, Users, AlertTriangle, CheckCircle, Menu } from "lucide-react";
+import { Baby, Users, AlertTriangle, CheckCircle, Menu, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -8,6 +8,9 @@ import PerformanceChart from "@/components/PerformanceChart";
 import TrendChart from "@/components/TrendChart";
 import BirthdayCard from "@/components/BirthdayCard";
 import FamilyTable from "@/components/FamilyTable";
+import ManagerTable from "@/components/ManagerTable";
+import AddManagerDialog from "@/components/AddManagerDialog";
+import AddFamilyDialog from "@/components/AddFamilyDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Language } from "@/lib/i18n";
@@ -22,7 +25,9 @@ interface BossDashboardProps {
 
 export default function BossDashboard({ language, onLanguageChange, onBack }: BossDashboardProps) {
   const t = useTranslation(language);
-  const [activeTab, setActiveTab] = useState<'overview' | 'families'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
+  const [addManagerOpen, setAddManagerOpen] = useState(false);
+  const [addFamilyOpen, setAddFamilyOpen] = useState(false);
 
   //todo: remove mock functionality
   const totalChildren = mockChildren.length;
@@ -88,6 +93,20 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
     };
   });
 
+  const managerTableData = mockManagers.map(manager => {
+    const familiesCount = mockFamilies.filter(f => f.managerId === manager.id).length;
+    const childrenCount = mockChildren.filter(c => 
+      mockFamilies.some(f => f.id === c.familyId && f.managerId === manager.id)
+    ).length;
+    return {
+      id: manager.id,
+      name: manager.name,
+      email: manager.email,
+      familiesCount,
+      childrenCount,
+    };
+  });
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-background z-50">
@@ -106,13 +125,20 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <div className="flex gap-4 mb-6">
+        <div className="flex flex-wrap gap-4 mb-6">
           <Button 
             variant={activeTab === 'overview' ? 'default' : 'outline'}
             onClick={() => setActiveTab('overview')}
             data-testid="button-tab-overview"
           >
             {t.dashboard}
+          </Button>
+          <Button 
+            variant={activeTab === 'managers' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('managers')}
+            data-testid="button-tab-managers"
+          >
+            {language === 'zh-TW' ? '管理師管理' : 'Managers'}
           </Button>
           <Button 
             variant={activeTab === 'families' ? 'default' : 'outline'}
@@ -189,11 +215,37 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
           </div>
         )}
 
+        {activeTab === 'managers' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle>{language === 'zh-TW' ? '管理師名單' : 'Manager List'}</CardTitle>
+                <Button onClick={() => setAddManagerOpen(true)} data-testid="button-add-manager">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {language === 'zh-TW' ? '新增管理師' : 'Add Manager'}
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <ManagerTable
+                  managers={managerTableData}
+                  language={language}
+                  onEdit={(id) => console.log('Edit manager:', id)}
+                  onDelete={(id) => console.log('Delete manager:', id)}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {activeTab === 'families' && (
           <div className="space-y-6">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle>{t.families}</CardTitle>
+                <Button onClick={() => setAddFamilyOpen(true)} data-testid="button-add-family">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {language === 'zh-TW' ? '建立家庭資料' : 'Create Family'}
+                </Button>
               </CardHeader>
               <CardContent>
                 <FamilyTable
@@ -207,6 +259,21 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
           </div>
         )}
       </main>
+
+      <AddManagerDialog
+        open={addManagerOpen}
+        onOpenChange={setAddManagerOpen}
+        language={language}
+        onSave={(data) => console.log('Manager saved:', data)}
+      />
+
+      <AddFamilyDialog
+        open={addFamilyOpen}
+        onOpenChange={setAddFamilyOpen}
+        language={language}
+        managers={mockManagers}
+        onSave={(data) => console.log('Family saved:', data)}
+      />
     </div>
   );
 }
