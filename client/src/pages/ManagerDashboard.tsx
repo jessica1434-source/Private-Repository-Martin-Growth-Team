@@ -10,30 +10,73 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
-import { mockManagers, mockFamilies, mockChildren, mockGrowthRecords } from "@/lib/mockData";
+
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Family {
+  id: string;
+  familyName: string;
+  country: string;
+  managerId: string;
+  complianceStatus: string;
+  managerNotes: string;
+}
+
+interface Child {
+  id: string;
+  name: string;
+  birthday: string;
+  familyId: string;
+}
+
+interface GrowthRecord {
+  id: string;
+  childId: string;
+  recordDate: string;
+  height: number;
+  weight: number;
+  notes: string;
+}
 
 interface ManagerDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   managerId: string;
   onBack: () => void;
+  managers: Manager[];
+  families: Family[];
+  setFamilies: (families: Family[]) => void;
+  children: Child[];
+  growthRecords: GrowthRecord[];
+  setGrowthRecords: (records: GrowthRecord[]) => void;
 }
 
-export default function ManagerDashboard({ language, onLanguageChange, managerId, onBack }: ManagerDashboardProps) {
+export default function ManagerDashboard({ 
+  language, 
+  onLanguageChange, 
+  managerId, 
+  onBack,
+  managers,
+  families,
+  setFamilies,
+  children,
+  growthRecords,
+  setGrowthRecords
+}: ManagerDashboardProps) {
   const t = useTranslation(language);
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [selectedFamily, setSelectedFamily] = useState<string>('');
-
-  //todo: remove mock functionality - using state to manage data
-  const [families, setFamilies] = useState(mockFamilies);
-  const [growthRecords, setGrowthRecords] = useState(mockGrowthRecords);
   
-  const currentManager = mockManagers.find(m => m.id === managerId);
+  const currentManager = managers.find(m => m.id === managerId);
 
   const myFamilies = families.filter(f => f.managerId === managerId);
-  const myChildren = mockChildren.filter(child => 
+  const myChildren = children.filter(child => 
     myFamilies.some(f => f.id === child.familyId)
   );
 
@@ -117,7 +160,7 @@ export default function ManagerDashboard({ language, onLanguageChange, managerId
           <CardContent>
             <div className="grid gap-4">
               {myFamilies.map(family => {
-                const childrenCount = mockChildren.filter(c => c.familyId === family.id).length;
+                const childrenCount = children.filter(c => c.familyId === family.id).length;
                 return (
                   <div 
                     key={family.id} 

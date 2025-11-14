@@ -8,11 +8,18 @@ import ManagerSelection from "./pages/ManagerSelection";
 import BossDashboard from "./pages/BossDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import type { Language } from "./lib/i18n";
+import { mockManagers, mockFamilies, mockChildren, mockGrowthRecords } from "./lib/mockData";
 
 function App() {
   const [language, setLanguage] = useState<Language>('zh-TW');
   const [selectedRole, setSelectedRole] = useState<'boss' | 'manager' | null>(null);
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+
+  //todo: remove mock functionality - shared data state across all views
+  const [managers, setManagers] = useState(mockManagers);
+  const [families, setFamilies] = useState(mockFamilies);
+  const [children, setChildren] = useState(mockChildren);
+  const [growthRecords, setGrowthRecords] = useState(mockGrowthRecords);
 
   const handleRoleSelect = (role: 'boss' | 'manager') => {
     setSelectedRole(role);
@@ -46,6 +53,12 @@ function App() {
             language={language}
             onLanguageChange={setLanguage}
             onBack={handleBackToRoleSelection}
+            managers={managers}
+            setManagers={setManagers}
+            families={families}
+            setFamilies={setFamilies}
+            children={children}
+            setChildren={setChildren}
           />
         )}
         {selectedRole === 'manager' && !selectedManagerId && (
@@ -54,6 +67,7 @@ function App() {
             onLanguageChange={setLanguage}
             onSelectManager={handleManagerSelect}
             onBack={handleBackToRoleSelection}
+            managers={managers}
           />
         )}
         {selectedRole === 'manager' && selectedManagerId && (
@@ -62,6 +76,12 @@ function App() {
             onLanguageChange={setLanguage}
             managerId={selectedManagerId}
             onBack={handleBackToManagerSelection}
+            managers={managers}
+            families={families}
+            setFamilies={setFamilies}
+            children={children}
+            growthRecords={growthRecords}
+            setGrowthRecords={setGrowthRecords}
           />
         )}
         <Toaster />

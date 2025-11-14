@@ -16,26 +16,58 @@ import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
-import { mockManagers, mockFamilies, mockChildren } from "@/lib/mockData";
+
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Family {
+  id: string;
+  familyName: string;
+  country: string;
+  managerId: string;
+  complianceStatus: string;
+  managerNotes: string;
+}
+
+interface Child {
+  id: string;
+  name: string;
+  birthday: string;
+  familyId: string;
+}
 
 interface BossDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   onBack: () => void;
+  managers: Manager[];
+  setManagers: (managers: Manager[]) => void;
+  families: Family[];
+  setFamilies: (families: Family[]) => void;
+  children: Child[];
+  setChildren: (children: Child[]) => void;
 }
 
-export default function BossDashboard({ language, onLanguageChange, onBack }: BossDashboardProps) {
+export default function BossDashboard({ 
+  language, 
+  onLanguageChange, 
+  onBack,
+  managers,
+  setManagers,
+  families,
+  setFamilies,
+  children,
+  setChildren
+}: BossDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
   const [addManagerOpen, setAddManagerOpen] = useState(false);
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
-
-  //todo: remove mock functionality - using state to manage data in prototype
-  const [managers, setManagers] = useState(mockManagers);
-  const [families, setFamilies] = useState(mockFamilies);
-  const [children, setChildren] = useState(mockChildren);
 
   const totalChildren = children.length;
   const totalManagers = managers.length;

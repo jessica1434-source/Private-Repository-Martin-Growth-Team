@@ -4,20 +4,27 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Language } from "@/lib/i18n";
-import { mockManagers } from "@/lib/mockData";
+
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface ManagerSelectionProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   onSelectManager: (managerId: string) => void;
   onBack: () => void;
+  managers: Manager[];
 }
 
 export default function ManagerSelection({ 
   language, 
   onLanguageChange, 
   onSelectManager,
-  onBack 
+  onBack,
+  managers
 }: ManagerSelectionProps) {
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +54,7 @@ export default function ManagerSelection({
             </p>
           </div>
           <div className="grid gap-4">
-            {mockManagers.map((manager) => (
+            {managers.map((manager) => (
               <Card 
                 key={manager.id}
                 className="cursor-pointer transition-all hover-elevate active-elevate-2"
