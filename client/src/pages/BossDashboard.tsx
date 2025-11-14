@@ -32,11 +32,15 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
   const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
 
-  //todo: remove mock functionality
-  const totalChildren = mockChildren.length;
-  const totalManagers = mockManagers.length;
-  const highRiskFamilies = mockFamilies.filter(f => f.complianceStatus === 'red').length;
-  const stableFamilies = mockFamilies.filter(f => f.complianceStatus === 'green').length;
+  //todo: remove mock functionality - using state to manage data in prototype
+  const [managers, setManagers] = useState(mockManagers);
+  const [families, setFamilies] = useState(mockFamilies);
+  const [children, setChildren] = useState(mockChildren);
+
+  const totalChildren = children.length;
+  const totalManagers = managers.length;
+  const highRiskFamilies = families.filter(f => f.complianceStatus === 'red').length;
+  const stableFamilies = families.filter(f => f.complianceStatus === 'green').length;
 
   const performanceData = [
     { name: '陳美玲', height: 2.3, weight: 0.8 },
@@ -76,13 +80,13 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
     ],
   };
 
-  const upcomingBirthdays = mockChildren
+  const upcomingBirthdays = children
     .slice(0, 5)
     .sort((a, b) => new Date(a.birthday).getMonth() - new Date(b.birthday).getMonth());
 
-  const familyTableData = mockFamilies.map(family => {
-    const manager = mockManagers.find(m => m.id === family.managerId);
-    const childrenCount = mockChildren.filter(c => c.familyId === family.id).length;
+  const familyTableData = families.map(family => {
+    const manager = managers.find(m => m.id === family.managerId);
+    const childrenCount = children.filter(c => c.familyId === family.id).length;
     return {
       id: family.id,
       familyName: family.familyName,
@@ -96,10 +100,10 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
     };
   });
 
-  const managerTableData = mockManagers.map(manager => {
-    const familiesCount = mockFamilies.filter(f => f.managerId === manager.id).length;
-    const childrenCount = mockChildren.filter(c => 
-      mockFamilies.some(f => f.id === c.familyId && f.managerId === manager.id)
+  const managerTableData = managers.map(manager => {
+    const familiesCount = families.filter(f => f.managerId === manager.id).length;
+    const childrenCount = children.filter(c => 
+      families.some(f => f.id === c.familyId && f.managerId === manager.id)
     ).length;
     return {
       id: manager.id,
@@ -110,12 +114,55 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
     };
   });
 
+  const handleAddManager = (data: { name: string; email: string }) => {
+    const newManager = {
+      id: `m${managers.length + 1}`,
+      name: data.name,
+      email: data.email,
+    };
+    setManagers([...managers, newManager]);
+  };
+
+  const handleAddFamily = (data: {
+    familyName: string;
+    country: string;
+    managerId: string;
+    children: Array<{ name: string; birthday: string }>;
+  }) => {
+    const newFamilyId = `f${families.length + 1}`;
+    const newFamily = {
+      id: newFamilyId,
+      familyName: data.familyName,
+      country: data.country,
+      managerId: data.managerId,
+      complianceStatus: 'green',
+      managerNotes: '',
+    };
+    setFamilies([...families, newFamily]);
+
+    const newChildren = data.children.map((child, index) => ({
+      id: `c${children.length + index + 1}`,
+      name: child.name,
+      birthday: child.birthday,
+      familyId: newFamilyId,
+    }));
+    setChildren([...children, ...newChildren]);
+  };
+
   const handleEditFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setEditFamilyStatusOpen(true);
   };
 
-  const selectedFamily = mockFamilies.find(f => f.id === selectedFamilyId);
+  const handleUpdateFamilyStatus = (data: { status: 'red' | 'yellow' | 'green'; notes: string }) => {
+    setFamilies(families.map(f => 
+      f.id === selectedFamilyId 
+        ? { ...f, complianceStatus: data.status, managerNotes: data.notes }
+        : f
+    ));
+  };
+
+  const selectedFamily = families.find(f => f.id === selectedFamilyId);
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,7 +219,7 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
                 title={t.totalManagers}
                 value={totalManagers}
                 icon={Users}
-                description={language === 'zh-TW' ? `平均負責 ${Math.round(mockFamilies.length / totalManagers)} 個家庭` : `Avg ${Math.round(mockFamilies.length / totalManagers)} families each`}
+                description={language === 'zh-TW' ? `平均負責 ${Math.round(families.length / totalManagers)} 個家庭` : `Avg ${Math.round(families.length / totalManagers)} families each`}
               />
               <MetricCard
                 title={t.highRiskFamilies}
@@ -274,15 +321,15 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
         open={addManagerOpen}
         onOpenChange={setAddManagerOpen}
         language={language}
-        onSave={(data) => console.log('Manager saved:', data)}
+        onSave={handleAddManager}
       />
 
       <AddFamilyDialog
         open={addFamilyOpen}
         onOpenChange={setAddFamilyOpen}
         language={language}
-        managers={mockManagers}
-        onSave={(data) => console.log('Family saved:', data)}
+        managers={managers}
+        onSave={handleAddFamily}
       />
 
       {selectedFamily && (
@@ -293,7 +340,7 @@ export default function BossDashboard({ language, onLanguageChange, onBack }: Bo
           currentStatus={selectedFamily.complianceStatus as 'red' | 'yellow' | 'green'}
           currentNotes={selectedFamily.managerNotes || ''}
           language={language}
-          onSave={(data) => console.log('Family status updated:', { familyId: selectedFamilyId, ...data })}
+          onSave={handleUpdateFamilyStatus}
         />
       )}
     </div>

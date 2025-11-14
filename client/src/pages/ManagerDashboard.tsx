@@ -25,16 +25,19 @@ export default function ManagerDashboard({ language, onLanguageChange, onBack }:
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [selectedFamily, setSelectedFamily] = useState<string>('');
 
-  //todo: remove mock functionality - simulating manager ID
+  //todo: remove mock functionality - simulating manager ID and using state
   const managerId = '1';
-  const myFamilies = mockFamilies.filter(f => f.managerId === managerId);
+  const [families, setFamilies] = useState(mockFamilies);
+  const [growthRecords, setGrowthRecords] = useState(mockGrowthRecords);
+
+  const myFamilies = families.filter(f => f.managerId === managerId);
   const myChildren = mockChildren.filter(child => 
     myFamilies.some(f => f.id === child.familyId)
   );
 
   const childrenTableData = myChildren.map(child => {
-    const family = mockFamilies.find(f => f.id === child.familyId);
-    const latestRecord = mockGrowthRecords
+    const family = families.find(f => f.id === child.familyId);
+    const latestRecord = growthRecords
       .filter(r => r.childId === child.id)
       .sort((a, b) => new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime())[0];
 
@@ -54,9 +57,29 @@ export default function ManagerDashboard({ language, onLanguageChange, onBack }:
     setRecordDialogOpen(true);
   };
 
+  const handleSaveGrowthRecord = (data: { date: string; height: number; weight: number; notes: string }) => {
+    const newRecord = {
+      id: `r${growthRecords.length + 1}`,
+      childId: selectedChild,
+      recordDate: data.date,
+      height: data.height,
+      weight: data.weight,
+      notes: data.notes,
+    };
+    setGrowthRecords([...growthRecords, newRecord]);
+  };
+
   const handleUpdateStatus = (familyId: string) => {
     setSelectedFamily(familyId);
     setStatusDialogOpen(true);
+  };
+
+  const handleSaveFamilyStatus = (data: { status: 'red' | 'yellow' | 'green'; notes: string }) => {
+    setFamilies(families.map(f => 
+      f.id === selectedFamily 
+        ? { ...f, complianceStatus: data.status, managerNotes: data.notes }
+        : f
+    ));
   };
 
   const selectedChildData = myChildren.find(c => c.id === selectedChild);
@@ -143,7 +166,7 @@ export default function ManagerDashboard({ language, onLanguageChange, onBack }:
         onOpenChange={setRecordDialogOpen}
         childName={selectedChildData?.name || ''}
         language={language}
-        onSave={(data) => console.log('Growth record saved:', data)}
+        onSave={handleSaveGrowthRecord}
       />
 
       {selectedFamilyData && (
@@ -154,7 +177,7 @@ export default function ManagerDashboard({ language, onLanguageChange, onBack }:
           currentStatus={selectedFamilyData.complianceStatus as any}
           currentNotes={selectedFamilyData.managerNotes || ''}
           language={language}
-          onSave={(data) => console.log('Family status saved:', data)}
+          onSave={handleSaveFamilyStatus}
         />
       )}
     </div>
