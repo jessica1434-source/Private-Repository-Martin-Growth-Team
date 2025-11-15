@@ -10,6 +10,7 @@ import BirthdayCard from "@/components/BirthdayCard";
 import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
 import AddManagerDialog from "@/components/AddManagerDialog";
+import EditManagerDialog from "@/components/EditManagerDialog";
 import AddFamilyDialog from "@/components/AddFamilyDialog";
 import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
@@ -79,9 +80,11 @@ export default function BossDashboard({
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
   const [addManagerOpen, setAddManagerOpen] = useState(false);
+  const [editManagerOpen, setEditManagerOpen] = useState(false);
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
 
   const totalChildren = children.length;
@@ -168,6 +171,19 @@ export default function BossDashboard({
       email: data.email,
     };
     setManagers([...managers, newManager]);
+  };
+
+  const handleEditManager = (managerId: string) => {
+    setSelectedManagerId(managerId);
+    setEditManagerOpen(true);
+  };
+
+  const handleSaveManager = (data: { name: string; email: string }) => {
+    setManagers(managers.map(m => 
+      m.id === selectedManagerId 
+        ? { ...m, name: data.name, email: data.email }
+        : m
+    ));
   };
 
   const handleAddFamily = (data: {
@@ -355,7 +371,7 @@ export default function BossDashboard({
                 <ManagerTable
                   managers={managerTableData}
                   language={language}
-                  onEdit={(id) => console.log('Edit manager:', id)}
+                  onEdit={handleEditManager}
                   onDelete={(id) => console.log('Delete manager:', id)}
                 />
               </CardContent>
@@ -392,6 +408,17 @@ export default function BossDashboard({
         language={language}
         onSave={handleAddManager}
       />
+
+      {managers.find(m => m.id === selectedManagerId) && (
+        <EditManagerDialog
+          open={editManagerOpen}
+          onOpenChange={setEditManagerOpen}
+          language={language}
+          currentName={managers.find(m => m.id === selectedManagerId)!.name}
+          currentEmail={managers.find(m => m.id === selectedManagerId)!.email}
+          onSave={handleSaveManager}
+        />
+      )}
 
       <AddFamilyDialog
         open={addFamilyOpen}
