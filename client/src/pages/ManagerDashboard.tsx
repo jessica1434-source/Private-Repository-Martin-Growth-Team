@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ChildrenTable from "@/components/ChildrenTable";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
+import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -69,6 +70,7 @@ export default function ManagerDashboard({
 }: ManagerDashboardProps) {
   const t = useTranslation(language);
   const [recordDialogOpen, setRecordDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [selectedFamily, setSelectedFamily] = useState<string>('');
@@ -102,6 +104,11 @@ export default function ManagerDashboard({
     setRecordDialogOpen(true);
   };
 
+  const handleViewHistory = (childId: string) => {
+    setSelectedChild(childId);
+    setHistoryDialogOpen(true);
+  };
+
   const handleSaveGrowthRecord = (data: { date: string; height: number; weight: number; notes: string }) => {
     const newRecord = {
       id: `r${growthRecords.length + 1}`,
@@ -128,6 +135,7 @@ export default function ManagerDashboard({
   };
 
   const selectedChildData = myChildren.find(c => c.id === selectedChild);
+  const selectedChildRecords = growthRecords.filter(r => r.childId === selectedChild);
   const selectedFamilyData = myFamilies.find(f => f.id === selectedFamily);
 
   return (
@@ -205,7 +213,7 @@ export default function ManagerDashboard({
               children={childrenTableData}
               language={language}
               onAddRecord={handleAddRecord}
-              onViewHistory={(id) => console.log('View history for:', id)}
+              onViewHistory={handleViewHistory}
             />
           </CardContent>
         </Card>
@@ -218,6 +226,17 @@ export default function ManagerDashboard({
         language={language}
         onSave={handleSaveGrowthRecord}
       />
+
+      {selectedChildData && (
+        <GrowthHistoryDialog
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+          childName={selectedChildData.name}
+          birthday={selectedChildData.birthday}
+          records={selectedChildRecords}
+          language={language}
+        />
+      )}
 
       {selectedFamilyData && (
         <FamilyStatusDialog
