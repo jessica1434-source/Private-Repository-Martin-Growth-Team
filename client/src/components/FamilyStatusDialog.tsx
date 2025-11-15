@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +37,13 @@ export default function FamilyStatusDialog({
   const t = useTranslation(language);
   const [status, setStatus] = useState<'red' | 'yellow' | 'green'>(currentStatus);
   const [notes, setNotes] = useState(currentNotes);
+
+  useEffect(() => {
+    if (open) {
+      setStatus(currentStatus);
+      setNotes(currentNotes);
+    }
+  }, [open, currentStatus, currentNotes]);
 
   const handleSave = () => {
     onSave?.({ status, notes });
