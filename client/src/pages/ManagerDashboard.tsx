@@ -139,15 +139,15 @@ export default function ManagerDashboard({
   const selectedFamilyData = myFamilies.find(f => f.id === selectedFamily);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 bg-background z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back">
+            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back" className="hover:bg-primary/10">
               <Menu className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl md:text-2xl font-semibold">{t.myFamilies}</h1>
+              <h1 className="text-xl md:text-2xl font-bold">{t.myFamilies}</h1>
               {currentManager && (
                 <p className="text-sm text-muted-foreground">{currentManager.name}</p>
               )}
@@ -161,9 +161,9 @@ export default function ManagerDashboard({
       </header>
 
       <main className="container mx-auto px-6 py-8 space-y-8">
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>{t.familyStatus}</CardTitle>
+            <CardTitle className="text-xl">{t.familyStatus}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4">
@@ -172,7 +172,7 @@ export default function ManagerDashboard({
                 return (
                   <div 
                     key={family.id} 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border rounded-lg"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border rounded-lg hover:shadow-md transition-shadow duration-200 bg-card"
                     data-testid={`card-family-status-${family.id}`}
                   >
                     <div className="flex-1">
@@ -204,9 +204,9 @@ export default function ManagerDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>{t.records}</CardTitle>
+            <CardTitle className="text-xl">{t.records}</CardTitle>
           </CardHeader>
           <CardContent>
             <ChildrenTable

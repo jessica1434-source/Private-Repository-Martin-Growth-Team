@@ -250,14 +250,17 @@ export default function BossDashboard({
   const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b sticky top-0 bg-background z-50">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back">
+            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back" className="hover:bg-primary/10">
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl md:text-2xl font-semibold">{t.dashboard}</h1>
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold">{t.dashboard}</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">{language === 'zh-TW' ? '總覽管理控制台' : 'Management Overview'}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
@@ -267,9 +270,10 @@ export default function BossDashboard({
       </header>
 
       <main className="container mx-auto px-6 py-8">
-        <div className="flex flex-wrap gap-4 mb-6">
+        <div className="flex flex-wrap gap-3 mb-8">
           <Button 
             variant={activeTab === 'overview' ? 'default' : 'outline'}
+            className="transition-all duration-200"
             onClick={() => setActiveTab('overview')}
             data-testid="button-tab-overview"
           >
@@ -293,7 +297,7 @@ export default function BossDashboard({
 
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title={t.totalChildren}
                 value={totalChildren}
