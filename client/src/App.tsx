@@ -59,6 +59,8 @@ function App() {
             setFamilies={setFamilies}
             children={children}
             setChildren={setChildren}
+            growthRecords={growthRecords}
+            setGrowthRecords={setGrowthRecords}
           />
         )}
         {selectedRole === 'manager' && !selectedManagerId && (

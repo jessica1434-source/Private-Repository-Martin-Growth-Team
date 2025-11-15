@@ -29,6 +29,8 @@ interface Manager {
 interface Child {
   name: string;
   birthday: string;
+  initialHeight: string;
+  initialWeight: string;
 }
 
 interface AddFamilyDialogProps {
@@ -55,24 +57,24 @@ export default function AddFamilyDialog({
   const [familyName, setFamilyName] = useState('');
   const [country, setCountry] = useState('');
   const [managerId, setManagerId] = useState('');
-  const [children, setChildren] = useState<Child[]>([{ name: '', birthday: '' }]);
+  const [children, setChildren] = useState<Child[]>([{ name: '', birthday: '', initialHeight: '', initialWeight: '' }]);
 
   const handleAddChild = () => {
-    setChildren([...children, { name: '', birthday: '' }]);
+    setChildren([...children, { name: '', birthday: '', initialHeight: '', initialWeight: '' }]);
   };
 
   const handleRemoveChild = (index: number) => {
     setChildren(children.filter((_, i) => i !== index));
   };
 
-  const handleChildChange = (index: number, field: 'name' | 'birthday', value: string) => {
+  const handleChildChange = (index: number, field: 'name' | 'birthday' | 'initialHeight' | 'initialWeight', value: string) => {
     const newChildren = [...children];
     newChildren[index][field] = value;
     setChildren(newChildren);
   };
 
   const handleSave = () => {
-    const validChildren = children.filter(c => c.name && c.birthday);
+    const validChildren = children.filter(c => c.name && c.birthday && c.initialHeight && c.initialWeight);
     if (familyName && country && managerId && validChildren.length > 0) {
       onSave?.({
         familyName,
@@ -84,7 +86,7 @@ export default function AddFamilyDialog({
       setFamilyName('');
       setCountry('');
       setManagerId('');
-      setChildren([{ name: '', birthday: '' }]);
+      setChildren([{ name: '', birthday: '', initialHeight: '', initialWeight: '' }]);
     }
   };
 
@@ -205,6 +207,36 @@ export default function AddFamilyDialog({
                     data-testid={`input-child-birthday-${index}`}
                   />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor={`child-height-${index}`}>
+                      {language === 'zh-TW' ? '初始身高 (cm)' : 'Initial Height (cm)'}
+                    </Label>
+                    <Input
+                      id={`child-height-${index}`}
+                      type="number"
+                      step="0.1"
+                      value={child.initialHeight}
+                      onChange={(e) => handleChildChange(index, 'initialHeight', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：120.5' : 'e.g., 120.5'}
+                      data-testid={`input-child-height-${index}`}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor={`child-weight-${index}`}>
+                      {language === 'zh-TW' ? '初始體重 (kg)' : 'Initial Weight (kg)'}
+                    </Label>
+                    <Input
+                      id={`child-weight-${index}`}
+                      type="number"
+                      step="0.1"
+                      value={child.initialWeight}
+                      onChange={(e) => handleChildChange(index, 'initialWeight', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：25.3' : 'e.g., 25.3'}
+                      data-testid={`input-child-weight-${index}`}
+                    />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -215,7 +247,7 @@ export default function AddFamilyDialog({
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!familyName || !country || !managerId || children.every(c => !c.name || !c.birthday)}
+            disabled={!familyName || !country || !managerId || children.every(c => !c.name || !c.birthday || !c.initialHeight || !c.initialWeight)}
             data-testid="button-save"
           >
             {t.save}

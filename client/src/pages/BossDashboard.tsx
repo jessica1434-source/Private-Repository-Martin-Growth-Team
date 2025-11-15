@@ -39,6 +39,15 @@ interface Child {
   familyId: string;
 }
 
+interface GrowthRecord {
+  id: string;
+  childId: string;
+  recordDate: string;
+  height: number;
+  weight: number;
+  notes: string;
+}
+
 interface BossDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
@@ -49,6 +58,8 @@ interface BossDashboardProps {
   setFamilies: (families: Family[]) => void;
   children: Child[];
   setChildren: (children: Child[]) => void;
+  growthRecords: GrowthRecord[];
+  setGrowthRecords: (records: GrowthRecord[]) => void;
 }
 
 export default function BossDashboard({ 
@@ -60,7 +71,9 @@ export default function BossDashboard({
   families,
   setFamilies,
   children,
-  setChildren
+  setChildren,
+  growthRecords,
+  setGrowthRecords
 }: BossDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
@@ -159,7 +172,7 @@ export default function BossDashboard({
     familyName: string;
     country: string;
     managerId: string;
-    children: Array<{ name: string; birthday: string }>;
+    children: Array<{ name: string; birthday: string; initialHeight: string; initialWeight: string }>;
   }) => {
     const newFamilyId = `f${families.length + 1}`;
     const newFamily = {
@@ -179,6 +192,17 @@ export default function BossDashboard({
       familyId: newFamilyId,
     }));
     setChildren([...children, ...newChildren]);
+
+    const today = new Date().toISOString().split('T')[0];
+    const initialRecords = data.children.map((child, index) => ({
+      id: `gr${growthRecords.length + index + 1}`,
+      childId: `c${children.length + index + 1}`,
+      recordDate: today,
+      height: parseFloat(child.initialHeight),
+      weight: parseFloat(child.initialWeight),
+      notes: language === 'zh-TW' ? '初始紀錄' : 'Initial record',
+    }));
+    setGrowthRecords([...growthRecords, ...initialRecords]);
   };
 
   const handleEditFamily = (familyId: string) => {
