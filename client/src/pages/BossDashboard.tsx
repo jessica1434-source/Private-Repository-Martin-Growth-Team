@@ -12,6 +12,7 @@ import ManagerTable from "@/components/ManagerTable";
 import AddManagerDialog from "@/components/AddManagerDialog";
 import AddFamilyDialog from "@/components/AddFamilyDialog";
 import FamilyStatusDialog from "@/components/FamilyStatusDialog";
+import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Language } from "@/lib/i18n";
@@ -80,6 +81,7 @@ export default function BossDashboard({
   const [addManagerOpen, setAddManagerOpen] = useState(false);
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
+  const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
 
   const totalChildren = children.length;
@@ -205,6 +207,11 @@ export default function BossDashboard({
     setGrowthRecords([...growthRecords, ...initialRecords]);
   };
 
+  const handleViewFamily = (familyId: string) => {
+    setSelectedFamilyId(familyId);
+    setViewFamilyDetailOpen(true);
+  };
+
   const handleEditFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setEditFamilyStatusOpen(true);
@@ -219,6 +226,12 @@ export default function BossDashboard({
   };
 
   const selectedFamily = families.find(f => f.id === selectedFamilyId);
+  const selectedFamilyChildren = children.filter(c => c.familyId === selectedFamilyId);
+  const selectedFamilyRecords = selectedFamilyChildren.reduce((acc, child) => {
+    acc[child.id] = growthRecords.filter(r => r.childId === child.id);
+    return acc;
+  }, {} as { [childId: string]: typeof growthRecords });
+  const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
 
   return (
     <div className="min-h-screen bg-background">
@@ -364,7 +377,7 @@ export default function BossDashboard({
                 <FamilyTable
                   families={familyTableData}
                   language={language}
-                  onView={(id) => console.log('View family:', id)}
+                  onView={handleViewFamily}
                   onEdit={handleEditFamily}
                 />
               </CardContent>
@@ -397,6 +410,21 @@ export default function BossDashboard({
           currentNotes={selectedFamily.managerNotes || ''}
           language={language}
           onSave={handleUpdateFamilyStatus}
+        />
+      )}
+
+      {selectedFamily && selectedFamilyManager && (
+        <FamilyDetailDialog
+          open={viewFamilyDetailOpen}
+          onOpenChange={setViewFamilyDetailOpen}
+          familyName={selectedFamily.familyName}
+          country={selectedFamily.country}
+          managerName={selectedFamilyManager.name}
+          complianceStatus={selectedFamily.complianceStatus as 'red' | 'yellow' | 'green'}
+          managerNotes={selectedFamily.managerNotes || ''}
+          children={selectedFamilyChildren}
+          childrenRecords={selectedFamilyRecords}
+          language={language}
         />
       )}
     </div>
