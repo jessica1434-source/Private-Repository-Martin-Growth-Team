@@ -82,7 +82,8 @@ Preferred communication style: Simple, everyday language.
 - HSL-based CSS custom properties for theme variables
 - Support for light and dark modes
 - Semantic color naming (primary, destructive, muted, accent)
-- Status-specific colors (red/yellow/green) for compliance tracking
+- **Warm Pink Theme** (November 2025): Primary color set to warm pink (340° 75% 55%) with accent in soft yellow (30° 80% 88%) for a welcoming, caring atmosphere suitable for children's health management
+- Status-specific colors (red/yellow/green) for compliance tracking remain unchanged
 
 **Visual Enhancements (November 2025)**
 - Gradient backgrounds: All main pages use `bg-gradient-to-br from-background via-background to-muted/10` for subtle depth
