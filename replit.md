@@ -45,12 +45,14 @@ Preferred communication style: Simple, everyday language.
 - Country-specific tabbed trend analysis
 
 **Routing & Navigation**
-- **Email-Based Authentication**: Users log in via Replit Auth with their email
-- Automatic role detection and routing based on manager profile:
-  - Boss (role='boss'): Automatically routed to BossDashboard with full system access
-  - Supervisor (role='supervisor'): Routed to SupervisorDashboard with access to subordinate managers
-  - Manager (role='manager'): Routed to ManagerDashboard with access to assigned families
-- First-time login automatically links user account to manager profile via email matching
+- **Self-Service Registration**: Users can register with any email via Replit Auth
+- **Onboarding Flow**: First-time users complete a simple onboarding form to enter their name
+- **Automatic Profile Creation**: New users are automatically created as 'manager' role
+- **Role-Based Routing**: After registration, users are automatically routed to their dashboard:
+  - Boss (role='boss'): BossDashboard with full system access
+  - Supervisor (role='supervisor'): SupervisorDashboard with access to subordinate managers  
+  - Manager (role='manager'): ManagerDashboard with access to personally assigned families
+- **Role Promotion**: Boss users can manually upgrade managers to supervisor or boss roles (future feature)
 
 ### Backend Architecture
 
@@ -88,9 +90,13 @@ Preferred communication style: Simple, everyday language.
 - CRUD operations maintain data integrity and prevent cross-role data leakage
 
 **Authentication & Authorization**
-- **Replit Auth (OpenID Connect)**: Secure email-based authentication
+- **Replit Auth (OpenID Connect)**: Secure email-based authentication with verification codes
 - **Session Management**: PostgreSQL-backed sessions via connect-pg-simple
-- **Automatic Account Linking**: First login links user to manager profile by email
+- **Self-Service Onboarding**: 
+  - GET `/api/auth/user`: Returns user with associated manager profile
+  - POST `/api/profile`: Creates new manager profile for authenticated user (default role: 'manager')
+  - Prevents duplicate profile creation
+  - Auto-links user account to manager profile
 - **Role-Based Authorization**: All API routes enforce three-tier access control:
   - Boss: Full access to all managers, families, children, and growth records
   - Supervisor: Access restricted to subordinate managers and their data (database-filtered)
@@ -99,6 +105,7 @@ Preferred communication style: Simple, everyday language.
   - All routes require authentication (isAuthenticated middleware)
   - Authorization checks on every data access endpoint
   - Database-layer filtering prevents data leakage between roles
+  - New registrations default to lowest privilege (manager role)
 
 ### Design System
 
@@ -170,25 +177,27 @@ Preferred communication style: Simple, everyday language.
   - `ISSUER_URL`: Replit Auth OpenID Connect issuer
 - Production build outputs to `dist/public` directory
 
-## Test Accounts (November 2025)
+## User Registration (November 2025)
 
-The database is seeded with the following test accounts. Use these emails to log in via Replit Auth:
+The system supports **self-service registration**:
 
-### Boss Account
-- **Email**: `boss@example.com`
-- **Name**: 總經理 (General Manager)
-- **Access**: Full system access to all data
+1. **New User Flow**:
+   - User clicks "登入系統" (Login) on the landing page
+   - Redirected to Replit Auth login page
+   - Enter their email address (any valid email)
+   - Receive and enter verification code
+   - Complete onboarding form (enter name)
+   - Automatically created as 'manager' role
+   - Routed to ManagerDashboard
 
-### Supervisor Accounts
-- **Email**: `supervisor1@example.com` - 黃主任
-  - Manages: manager1@example.com, manager2@example.com
-- **Email**: `supervisor2@example.com` - 周主任
-  - Manages: manager3@example.com, manager4@example.com
+2. **Returning User Flow**:
+   - User clicks "登入系統" (Login)
+   - Automatically logged in (if session active) or receives new verification code
+   - Directly routed to appropriate dashboard based on role
 
-### Manager Accounts
-- `manager1@example.com` - 陳美玲 (under 黃主任)
-- `manager2@example.com` - 林志豪 (under 黃主任)
-- `manager3@example.com` - 王雅婷 (under 周主任)
-- `manager4@example.com` - 張建國 (under 周主任)
+3. **Role Management**:
+   - New users: Default to 'manager' role
+   - Boss promotion: Can be manually upgraded by existing boss users (future feature)
+   - Supervisor promotion: Can be manually upgraded by existing boss users (future feature)
 
-**Note**: First-time login with any of these emails will automatically link the user account to the corresponding manager profile. Subsequent logins will be instant.
+**Note**: The first user in the system should be manually promoted to 'boss' role via database management tools or admin scripts.

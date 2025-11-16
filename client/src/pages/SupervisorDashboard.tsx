@@ -60,9 +60,9 @@ export default function SupervisorDashboard({
   const isLoading = supervisorLoading || managersLoading || familiesLoading || childrenLoading || recordsLoading;
 
   const subordinateManagerIds = subordinateManagers.map(m => m.id);
-  const subordinateFamilies = allFamilies.filter(f => subordinateManagerIds.includes(f.managerId));
+  const subordinateFamilies = allFamilies.filter(f => f.managerId && subordinateManagerIds.includes(f.managerId));
   const subordinateFamilyIds = subordinateFamilies.map(f => f.id);
-  const subordinateChildren = allChildren.filter(c => subordinateFamilyIds.includes(c.familyId));
+  const subordinateChildren = allChildren.filter(c => c.familyId && subordinateFamilyIds.includes(c.familyId));
 
   const totalChildren = subordinateChildren.length;
   const totalManagers = subordinateManagers.length;

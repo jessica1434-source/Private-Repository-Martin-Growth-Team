@@ -19,13 +19,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Use auth context to get or link manager profile
-      const context = await getAuthContext(userId, email, storage);
+      // Check if manager profile exists (don't auto-create yet)
+      const manager = await storage.getManagerByUserId(userId);
       
-      res.json({ ...user, manager: context?.manager ?? null });
+      res.json({ ...user, manager: manager ?? null });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Profile creation route - creates manager profile for authenticated user
+  app.post('/api/profile', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const email = req.user.claims.email;
+      const { name } = req.body;
+
+      if (!name || name.trim().length < 2) {
+        return res.status(400).json({ message: "Name is required and must be at least 2 characters" });
+      }
+
+      // Check if manager already exists
+      const existingManager = await storage.getManagerByUserId(userId);
+      if (existingManager) {
+        return res.status(400).json({ message: "Profile already exists" });
+      }
+
+      // Create new manager with default role 'manager'
+      const newManager = await storage.createManager({
+        name: name.trim(),
+        email,
+        role: 'manager',
+        supervisorId: null,
+      });
+
+      // Link to user
+      await storage.linkUserToManagerByEmail(email, userId);
+
+      res.json({ success: true, manager: newManager });
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      res.status(500).json({ message: "Failed to create profile" });
     }
   });
 
