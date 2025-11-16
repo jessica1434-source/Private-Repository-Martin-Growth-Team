@@ -1,93 +1,54 @@
 import { useState } from "react";
-import { Baby, Users, AlertTriangle, CheckCircle, Menu, Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Baby, Users, AlertTriangle, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
 import TrendChart from "@/components/TrendChart";
 import BirthdayCard from "@/components/BirthdayCard";
 import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
-import AddManagerDialog from "@/components/AddManagerDialog";
-import EditManagerDialog from "@/components/EditManagerDialog";
-import AddFamilyDialog from "@/components/AddFamilyDialog";
-import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
-
-interface Manager {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  supervisorId: string | null;
-}
-
-interface Family {
-  id: string;
-  familyName: string;
-  country: string;
-  managerId: string;
-  complianceStatus: string;
-  managerNotes: string;
-}
-
-interface Child {
-  id: string;
-  name: string;
-  birthday: string;
-  familyId: string;
-}
-
-interface GrowthRecord {
-  id: string;
-  childId: string;
-  recordDate: string;
-  height: number;
-  weight: number;
-  notes: string;
-}
+import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
 
 interface BossDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
-  onBack: () => void;
-  managers: Manager[];
-  setManagers: (managers: Manager[]) => void;
-  families: Family[];
-  setFamilies: (families: Family[]) => void;
-  children: Child[];
-  setChildren: (children: Child[]) => void;
-  growthRecords: GrowthRecord[];
-  setGrowthRecords: (records: GrowthRecord[]) => void;
 }
 
 export default function BossDashboard({ 
   language, 
-  onLanguageChange, 
-  onBack,
-  managers,
-  setManagers,
-  families,
-  setFamilies,
-  children,
-  setChildren,
-  growthRecords,
-  setGrowthRecords
+  onLanguageChange
 }: BossDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
-  const [addManagerOpen, setAddManagerOpen] = useState(false);
-  const [editManagerOpen, setEditManagerOpen] = useState(false);
-  const [addFamilyOpen, setAddFamilyOpen] = useState(false);
-  const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
-  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
+
+  const { data: managers = [], isLoading: managersLoading } = useQuery<Manager[]>({
+    queryKey: ['/api/managers'],
+  });
+
+  const { data: families = [], isLoading: familiesLoading } = useQuery<Family[]>({
+    queryKey: ['/api/families'],
+  });
+
+  const { data: children = [], isLoading: childrenLoading } = useQuery<Child[]>({
+    queryKey: ['/api/children'],
+  });
+
+  const { data: growthRecords = [], isLoading: recordsLoading } = useQuery<GrowthRecord[]>({
+    queryKey: ['/api/growth-records'],
+  });
+
+  const isLoading = managersLoading || familiesLoading || childrenLoading || recordsLoading;
 
   const totalChildren = children.length;
   const totalManagers = managers.length;
@@ -166,83 +127,9 @@ export default function BossDashboard({
     };
   });
 
-  const handleAddManager = (data: { name: string; email: string }) => {
-    const newManager = {
-      id: `m${managers.length + 1}`,
-      name: data.name,
-      email: data.email,
-      role: 'manager',
-      supervisorId: null,
-    };
-    setManagers([...managers, newManager]);
-  };
-
-  const handleEditManager = (managerId: string) => {
-    setSelectedManagerId(managerId);
-    setEditManagerOpen(true);
-  };
-
-  const handleSaveManager = (data: { name: string; email: string }) => {
-    setManagers(managers.map(m => 
-      m.id === selectedManagerId 
-        ? { ...m, name: data.name, email: data.email }
-        : m
-    ));
-  };
-
-  const handleAddFamily = (data: {
-    familyName: string;
-    country: string;
-    managerId: string;
-    children: Array<{ name: string; birthday: string; initialHeight: string; initialWeight: string }>;
-  }) => {
-    const newFamilyId = `f${families.length + 1}`;
-    const newFamily = {
-      id: newFamilyId,
-      familyName: data.familyName,
-      country: data.country,
-      managerId: data.managerId,
-      complianceStatus: 'green',
-      managerNotes: '',
-    };
-    setFamilies([...families, newFamily]);
-
-    const newChildren = data.children.map((child, index) => ({
-      id: `c${children.length + index + 1}`,
-      name: child.name,
-      birthday: child.birthday,
-      familyId: newFamilyId,
-    }));
-    setChildren([...children, ...newChildren]);
-
-    const today = new Date().toISOString().split('T')[0];
-    const initialRecords = data.children.map((child, index) => ({
-      id: `gr${growthRecords.length + index + 1}`,
-      childId: `c${children.length + index + 1}`,
-      recordDate: today,
-      height: parseFloat(child.initialHeight),
-      weight: parseFloat(child.initialWeight),
-      notes: language === 'zh-TW' ? '初始紀錄' : 'Initial record',
-    }));
-    setGrowthRecords([...growthRecords, ...initialRecords]);
-  };
-
   const handleViewFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setViewFamilyDetailOpen(true);
-  };
-
-  const handleEditFamily = (familyId: string) => {
-    setSelectedFamilyId(familyId);
-    setEditFamilyStatusOpen(true);
-  };
-
-  const handleUpdateFamilyStatus = (data: { status: 'red' | 'yellow' | 'green'; notes: string }) => {
-    setFamilies(families.map(f => 
-      f.id === selectedFamilyId 
-        ? { ...f, complianceStatus: data.status, managerNotes: data.notes }
-        : f
-    ));
   };
 
   const selectedFamily = families.find(f => f.id === selectedFamilyId);
@@ -253,18 +140,46 @@ export default function BossDashboard({
   }, {} as { [childId: string]: typeof growthRecords });
   const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
-        <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back" className="hover:bg-primary/10">
-              <Menu className="h-5 w-5" />
-            </Button>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+        <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
+          <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
             <div>
               <h1 className="text-xl md:text-2xl font-bold">{t.dashboard}</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">{language === 'zh-TW' ? '總覽管理控制台' : 'Management Overview'}</p>
             </div>
+            <div className="flex items-center gap-2">
+              <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-4 w-24" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-8 w-16" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold">{t.dashboard}</h1>
+            <p className="text-xs text-muted-foreground hidden sm:block">{language === 'zh-TW' ? '總覽管理控制台' : 'Management Overview'}</p>
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
@@ -368,19 +283,13 @@ export default function BossDashboard({
         {activeTab === 'managers' && (
           <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardHeader>
                 <CardTitle>{language === 'zh-TW' ? '管理師名單' : 'Manager List'}</CardTitle>
-                <Button onClick={() => setAddManagerOpen(true)} data-testid="button-add-manager">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {language === 'zh-TW' ? '新增管理師' : 'Add Manager'}
-                </Button>
               </CardHeader>
               <CardContent>
                 <ManagerTable
                   managers={managerTableData}
                   language={language}
-                  onEdit={handleEditManager}
-                  onDelete={(id) => console.log('Delete manager:', id)}
                 />
               </CardContent>
             </Card>
@@ -390,63 +299,20 @@ export default function BossDashboard({
         {activeTab === 'families' && (
           <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardHeader>
                 <CardTitle>{t.families}</CardTitle>
-                <Button onClick={() => setAddFamilyOpen(true)} data-testid="button-add-family">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {language === 'zh-TW' ? '建立家庭資料' : 'Create Family'}
-                </Button>
               </CardHeader>
               <CardContent>
                 <FamilyTable
                   families={familyTableData}
                   language={language}
                   onView={handleViewFamily}
-                  onEdit={handleEditFamily}
                 />
               </CardContent>
             </Card>
           </div>
         )}
       </main>
-
-      <AddManagerDialog
-        open={addManagerOpen}
-        onOpenChange={setAddManagerOpen}
-        language={language}
-        onSave={handleAddManager}
-      />
-
-      {managers.find(m => m.id === selectedManagerId) && (
-        <EditManagerDialog
-          open={editManagerOpen}
-          onOpenChange={setEditManagerOpen}
-          language={language}
-          currentName={managers.find(m => m.id === selectedManagerId)!.name}
-          currentEmail={managers.find(m => m.id === selectedManagerId)!.email}
-          onSave={handleSaveManager}
-        />
-      )}
-
-      <AddFamilyDialog
-        open={addFamilyOpen}
-        onOpenChange={setAddFamilyOpen}
-        language={language}
-        managers={managers}
-        onSave={handleAddFamily}
-      />
-
-      {selectedFamily && (
-        <FamilyStatusDialog
-          open={editFamilyStatusOpen}
-          onOpenChange={setEditFamilyStatusOpen}
-          familyName={selectedFamily.familyName}
-          currentStatus={selectedFamily.complianceStatus as 'red' | 'yellow' | 'green'}
-          currentNotes={selectedFamily.managerNotes || ''}
-          language={language}
-          onSave={handleUpdateFamilyStatus}
-        />
-      )}
 
       {selectedFamily && selectedFamilyManager && (
         <FamilyDetailDialog

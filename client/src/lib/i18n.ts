@@ -214,3 +214,22 @@ export const translations = {
 export function useTranslation(lang: Language) {
   return translations[lang];
 }
+
+import { useState, useEffect } from 'react';
+
+export function useLanguage() {
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('language');
+    return (saved as Language) || 'zh-TW';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
+
+  const t = (key: keyof typeof translations['zh-TW']) => {
+    return translations[language][key] || key;
+  };
+
+  return { language, setLanguage, t };
+}

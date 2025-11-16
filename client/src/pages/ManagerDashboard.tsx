@@ -1,91 +1,57 @@
 import { useState } from "react";
-import { Menu, Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
-import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
-import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
-
-interface Manager {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  supervisorId: string | null;
-}
-
-interface Family {
-  id: string;
-  familyName: string;
-  country: string;
-  managerId: string;
-  complianceStatus: string;
-  managerNotes: string;
-}
-
-interface Child {
-  id: string;
-  name: string;
-  birthday: string;
-  familyId: string;
-}
-
-interface GrowthRecord {
-  id: string;
-  childId: string;
-  recordDate: string;
-  height: number;
-  weight: number;
-  notes: string;
-}
+import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
 
 interface ManagerDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   managerId: string;
-  onBack: () => void;
-  managers: Manager[];
-  families: Family[];
-  setFamilies: (families: Family[]) => void;
-  children: Child[];
-  growthRecords: GrowthRecord[];
-  setGrowthRecords: (records: GrowthRecord[]) => void;
 }
 
 export default function ManagerDashboard({ 
   language, 
   onLanguageChange, 
-  managerId, 
-  onBack,
-  managers,
-  families,
-  setFamilies,
-  children,
-  growthRecords,
-  setGrowthRecords
+  managerId
 }: ManagerDashboardProps) {
   const t = useTranslation(language);
-  const [recordDialogOpen, setRecordDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
-  const [selectedFamily, setSelectedFamily] = useState<string>('');
-  
-  const currentManager = managers.find(m => m.id === managerId);
 
-  const myFamilies = families.filter(f => f.managerId === managerId);
-  const myChildren = children.filter(child => 
-    myFamilies.some(f => f.id === child.familyId)
+  const { data: currentManager, isLoading: managerLoading } = useQuery<Manager>({
+    queryKey: ['/api/managers', managerId],
+  });
+
+  const { data: myFamilies = [], isLoading: familiesLoading } = useQuery<Family[]>({
+    queryKey: ['/api/families/manager', managerId],
+  });
+
+  const { data: allChildren = [], isLoading: childrenLoading } = useQuery<Child[]>({
+    queryKey: ['/api/children'],
+  });
+
+  const { data: growthRecords = [], isLoading: recordsLoading } = useQuery<GrowthRecord[]>({
+    queryKey: ['/api/growth-records'],
+  });
+
+  const isLoading = managerLoading || familiesLoading || childrenLoading || recordsLoading;
+
+  const myFamilyIds = myFamilies.map(f => f.id);
+  const myChildren = allChildren.filter(child => 
+    myFamilyIds.includes(child.familyId)
   );
 
   const childrenTableData = myChildren.map(child => {
-    const family = families.find(f => f.id === child.familyId);
+    const family = myFamilies.find(f => f.id === child.familyId);
     const latestRecord = growthRecords
       .filter(r => r.childId === child.id)
       .sort((a, b) => new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime())[0];
@@ -101,59 +67,55 @@ export default function ManagerDashboard({
     };
   });
 
-  const handleAddRecord = (childId: string) => {
-    setSelectedChild(childId);
-    setRecordDialogOpen(true);
-  };
-
   const handleViewHistory = (childId: string) => {
     setSelectedChild(childId);
     setHistoryDialogOpen(true);
   };
 
-  const handleSaveGrowthRecord = (data: { date: string; height: number; weight: number; notes: string }) => {
-    const newRecord = {
-      id: `r${growthRecords.length + 1}`,
-      childId: selectedChild,
-      recordDate: data.date,
-      height: data.height,
-      weight: data.weight,
-      notes: data.notes,
-    };
-    setGrowthRecords([...growthRecords, newRecord]);
-  };
-
-  const handleUpdateStatus = (familyId: string) => {
-    setSelectedFamily(familyId);
-    setStatusDialogOpen(true);
-  };
-
-  const handleSaveFamilyStatus = (data: { status: 'red' | 'yellow' | 'green'; notes: string }) => {
-    setFamilies(families.map(f => 
-      f.id === selectedFamily 
-        ? { ...f, complianceStatus: data.status, managerNotes: data.notes }
-        : f
-    ));
-  };
-
   const selectedChildData = myChildren.find(c => c.id === selectedChild);
   const selectedChildRecords = growthRecords.filter(r => r.childId === selectedChild);
-  const selectedFamilyData = myFamilies.find(f => f.id === selectedFamily);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+        <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
+          <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold">{t.myFamilies}</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-6 py-8">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2].map((i) => (
+                  <Skeleton key={i} className="h-24 w-full" />
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
         <div className="container mx-auto px-6 py-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={onBack} data-testid="button-back" className="hover:bg-primary/10">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold">{t.myFamilies}</h1>
-              {currentManager && (
-                <p className="text-sm text-muted-foreground">{currentManager.name}</p>
-              )}
-            </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold">{t.myFamilies}</h1>
+            {currentManager && (
+              <p className="text-sm text-muted-foreground">{currentManager.name}</p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
@@ -170,35 +132,26 @@ export default function ManagerDashboard({
           <CardContent>
             <div className="grid gap-4">
               {myFamilies.map(family => {
-                const childrenCount = children.filter(c => c.familyId === family.id).length;
+                const childrenCount = allChildren.filter(c => c.familyId === family.id).length;
                 return (
                   <div 
                     key={family.id} 
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border rounded-lg hover:shadow-md transition-shadow duration-200 bg-card"
+                    className="p-5 border rounded-lg hover:shadow-md transition-shadow duration-200 bg-card"
                     data-testid={`card-family-status-${family.id}`}
                   >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-2">{family.familyName}</h3>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                        <span>{childrenCount} {language === 'zh-TW' ? '位孩子' : 'children'}</span>
-                        <span>•</span>
-                        <span>{family.country === 'taiwan' ? t.taiwan : 
-                               family.country === 'singapore' ? t.singapore :
-                               family.country === 'malaysia' ? t.malaysia : t.brunei}</span>
-                        <span>•</span>
-                        <StatusBadge status={family.complianceStatus as any} language={language} />
-                      </div>
-                      {family.managerNotes && (
-                        <p className="text-sm mt-2 text-muted-foreground">{family.managerNotes}</p>
-                      )}
+                    <h3 className="font-semibold text-lg mb-2">{family.familyName}</h3>
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      <span>{childrenCount} {language === 'zh-TW' ? '位孩子' : 'children'}</span>
+                      <span>•</span>
+                      <span>{family.country === 'taiwan' ? t.taiwan : 
+                             family.country === 'singapore' ? t.singapore :
+                             family.country === 'malaysia' ? t.malaysia : t.brunei}</span>
+                      <span>•</span>
+                      <StatusBadge status={family.complianceStatus as any} language={language} />
                     </div>
-                    <Button 
-                      variant="outline"
-                      onClick={() => handleUpdateStatus(family.id)}
-                      data-testid={`button-update-status-${family.id}`}
-                    >
-                      {t.updateStatus}
-                    </Button>
+                    {family.managerNotes && (
+                      <p className="text-sm mt-2 text-muted-foreground">{family.managerNotes}</p>
+                    )}
                   </div>
                 );
               })}
@@ -207,27 +160,18 @@ export default function ManagerDashboard({
         </Card>
 
         <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardHeader>
             <CardTitle className="text-xl">{t.records}</CardTitle>
           </CardHeader>
           <CardContent>
             <ChildrenTable
               children={childrenTableData}
               language={language}
-              onAddRecord={handleAddRecord}
               onViewHistory={handleViewHistory}
             />
           </CardContent>
         </Card>
       </main>
-
-      <GrowthRecordDialog
-        open={recordDialogOpen}
-        onOpenChange={setRecordDialogOpen}
-        childName={selectedChildData?.name || ''}
-        language={language}
-        onSave={handleSaveGrowthRecord}
-      />
 
       {selectedChildData && (
         <GrowthHistoryDialog
@@ -237,18 +181,6 @@ export default function ManagerDashboard({
           birthday={selectedChildData.birthday}
           records={selectedChildRecords}
           language={language}
-        />
-      )}
-
-      {selectedFamilyData && (
-        <FamilyStatusDialog
-          open={statusDialogOpen}
-          onOpenChange={setStatusDialogOpen}
-          familyName={selectedFamilyData.familyName}
-          currentStatus={selectedFamilyData.complianceStatus as any}
-          currentNotes={selectedFamilyData.managerNotes || ''}
-          language={language}
-          onSave={handleSaveFamilyStatus}
         />
       )}
     </div>
