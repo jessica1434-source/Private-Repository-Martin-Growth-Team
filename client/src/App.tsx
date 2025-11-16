@@ -24,8 +24,21 @@ function AppContent() {
   // Get manager information from user object (attached by backend)
   const manager = (user as any)?.manager;
 
-  // If user has no associated manager record, they are a boss/director
+  // If user has no associated manager record, show error message
   if (!manager) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+          <p className="text-muted-foreground mb-4">No manager profile found for your account.</p>
+          <p className="text-sm text-muted-foreground">Please contact your administrator.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Route based on manager role
+  if (manager.role === 'boss') {
     return (
       <BossDashboard
         language={language}
@@ -34,7 +47,6 @@ function AppContent() {
     );
   }
 
-  // Route based on manager role
   if (manager.role === 'supervisor') {
     return (
       <SupervisorDashboard

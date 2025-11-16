@@ -60,6 +60,12 @@ async function upsertUser(
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
   });
+  
+  // Link user to manager record by email
+  const email = claims["email"];
+  if (email) {
+    await storage.linkUserToManagerByEmail(claims["sub"], email);
+  }
 }
 
 export async function setupAuth(app: Express) {

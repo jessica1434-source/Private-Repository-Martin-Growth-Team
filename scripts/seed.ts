@@ -11,8 +11,16 @@ async function seed() {
   await db.delete(families);
   await db.delete(managers);
 
-  // Create managers (supervisors and regular managers)
+  // Create managers (boss, supervisors and regular managers)
   console.log("Creating managers...");
+  
+  // Boss
+  const [boss] = await db.insert(managers).values({
+    name: "總經理",
+    email: "boss@example.com",
+    role: "boss",
+    supervisorId: null,
+  }).returning();
   
   // Supervisors
   const [supervisor1] = await db.insert(managers).values({
@@ -59,7 +67,7 @@ async function seed() {
     supervisorId: supervisor2.id,
   }).returning();
 
-  console.log(`Created ${6} managers`);
+  console.log(`Created ${7} managers (1 boss, 2 supervisors, 4 managers)`);
 
   // Create families
   console.log("Creating families...");

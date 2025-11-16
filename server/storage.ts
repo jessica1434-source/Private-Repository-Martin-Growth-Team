@@ -22,6 +22,7 @@ export interface IStorage {
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  linkUserToManagerByEmail(userId: string, email: string): Promise<void>;
 
   // Manager operations
   getManagerByUserId(userId: string): Promise<Manager | undefined>;
@@ -37,6 +38,7 @@ export interface IStorage {
   // Family operations
   getFamily(id: string): Promise<Family | undefined>;
   getFamiliesByManager(managerId: string): Promise<Family[]>;
+  getFamiliesForSupervisor(supervisorId: string): Promise<Family[]>;
   getAllFamilies(): Promise<Family[]>;
   createFamily(family: InsertFamily): Promise<Family>;
   updateFamily(id: string, family: Partial<InsertFamily>): Promise<Family>;
@@ -45,6 +47,8 @@ export interface IStorage {
   // Children operations
   getChild(id: string): Promise<Child | undefined>;
   getChildrenByFamily(familyId: string): Promise<Child[]>;
+  getChildrenForManager(managerId: string): Promise<Child[]>;
+  getChildrenForSupervisor(supervisorId: string): Promise<Child[]>;
   getAllChildren(): Promise<Child[]>;
   createChild(child: InsertChild): Promise<Child>;
   updateChild(id: string, child: Partial<InsertChild>): Promise<Child>;
@@ -53,6 +57,8 @@ export interface IStorage {
   // Growth record operations
   getGrowthRecord(id: string): Promise<GrowthRecord | undefined>;
   getGrowthRecordsByChild(childId: string): Promise<GrowthRecord[]>;
+  getGrowthRecordsForManager(managerId: string): Promise<GrowthRecord[]>;
+  getGrowthRecordsForSupervisor(supervisorId: string): Promise<GrowthRecord[]>;
   getAllGrowthRecords(): Promise<GrowthRecord[]>;
   createGrowthRecord(record: InsertGrowthRecord): Promise<GrowthRecord>;
   updateGrowthRecord(id: string, record: Partial<InsertGrowthRecord>): Promise<GrowthRecord>;
@@ -79,6 +85,15 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  async linkUserToManagerByEmail(userId: string, email: string): Promise<void> {
+    // Find manager by email and update/sync their userId
+    const manager = await this.getManagerByEmail(email);
+    if (manager && manager.userId !== userId) {
+      // Update userId even if already set (handles reassignment/reseeding)
+      await db.update(managers).set({ userId }).where(eq(managers.email, email));
+    }
   }
 
   // Manager operations
@@ -133,6 +148,22 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(families).where(eq(families.managerId, managerId));
   }
 
+  async getFamiliesForSupervisor(supervisorId: string): Promise<Family[]> {
+    const result = await db
+      .select({
+        id: families.id,
+        familyName: families.familyName,
+        country: families.country,
+        managerId: families.managerId,
+        complianceStatus: families.complianceStatus,
+        managerNotes: families.managerNotes,
+      })
+      .from(families)
+      .innerJoin(managers, eq(families.managerId, managers.id))
+      .where(eq(managers.supervisorId, supervisorId));
+    return result;
+  }
+
   async getAllFamilies(): Promise<Family[]> {
     return await db.select().from(families);
   }
@@ -161,6 +192,35 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(children).where(eq(children.familyId, familyId));
   }
 
+  async getChildrenForManager(managerId: string): Promise<Child[]> {
+    const result = await db
+      .select({
+        id: children.id,
+        name: children.name,
+        birthday: children.birthday,
+        familyId: children.familyId,
+      })
+      .from(children)
+      .innerJoin(families, eq(children.familyId, families.id))
+      .where(eq(families.managerId, managerId));
+    return result;
+  }
+
+  async getChildrenForSupervisor(supervisorId: string): Promise<Child[]> {
+    const result = await db
+      .select({
+        id: children.id,
+        name: children.name,
+        birthday: children.birthday,
+        familyId: children.familyId,
+      })
+      .from(children)
+      .innerJoin(families, eq(children.familyId, families.id))
+      .innerJoin(managers, eq(families.managerId, managers.id))
+      .where(eq(managers.supervisorId, supervisorId));
+    return result;
+  }
+
   async getAllChildren(): Promise<Child[]> {
     return await db.select().from(children);
   }
@@ -187,6 +247,41 @@ export class DatabaseStorage implements IStorage {
 
   async getGrowthRecordsByChild(childId: string): Promise<GrowthRecord[]> {
     return await db.select().from(growthRecords).where(eq(growthRecords.childId, childId));
+  }
+
+  async getGrowthRecordsForManager(managerId: string): Promise<GrowthRecord[]> {
+    const result = await db
+      .select({
+        id: growthRecords.id,
+        childId: growthRecords.childId,
+        recordDate: growthRecords.recordDate,
+        height: growthRecords.height,
+        weight: growthRecords.weight,
+        notes: growthRecords.notes,
+      })
+      .from(growthRecords)
+      .innerJoin(children, eq(growthRecords.childId, children.id))
+      .innerJoin(families, eq(children.familyId, families.id))
+      .where(eq(families.managerId, managerId));
+    return result;
+  }
+
+  async getGrowthRecordsForSupervisor(supervisorId: string): Promise<GrowthRecord[]> {
+    const result = await db
+      .select({
+        id: growthRecords.id,
+        childId: growthRecords.childId,
+        recordDate: growthRecords.recordDate,
+        height: growthRecords.height,
+        weight: growthRecords.weight,
+        notes: growthRecords.notes,
+      })
+      .from(growthRecords)
+      .innerJoin(children, eq(growthRecords.childId, children.id))
+      .innerJoin(families, eq(children.familyId, families.id))
+      .innerJoin(managers, eq(families.managerId, managers.id))
+      .where(eq(managers.supervisorId, supervisorId));
+    return result;
   }
 
   async getAllGrowthRecords(): Promise<GrowthRecord[]> {

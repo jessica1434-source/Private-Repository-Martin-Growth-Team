@@ -56,7 +56,7 @@ export const growthRecords = pgTable("growth_records", {
   recordDate: date("record_date").notNull(),
   height: real("height").notNull(),
   weight: real("weight").notNull(),
-  notes: text("notes"),
+  notes: text("notes").notNull().default(''),
 });
 
 export const insertManagerSchema = createInsertSchema(managers).omit({ id: true });
