@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
@@ -11,8 +11,15 @@ import ManagerDashboard from "./pages/ManagerDashboard";
 import type { Language } from "./lib/i18n";
 
 function AppContent() {
-  const [language, setLanguage] = useState<Language>('zh-TW');
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('language');
+    return (saved as Language) || 'zh-TW';
+  });
   const { user, isLoading, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    localStorage.setItem('language', language);
+  }, [language]);
 
   // Show landing page if not authenticated or still loading
   if (isLoading || !isAuthenticated) {
