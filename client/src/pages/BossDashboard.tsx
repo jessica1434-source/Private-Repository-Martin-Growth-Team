@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Baby, Users, AlertTriangle, CheckCircle } from "lucide-react";
+import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -125,7 +125,7 @@ export default function BossDashboard({
     return {
       id: manager.id,
       name: manager.name,
-      email: manager.email,
+      username: manager.username,
       familiesCount,
       childrenCount,
     };
@@ -156,6 +156,17 @@ export default function BossDashboard({
             <div className="flex items-center gap-2">
               <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
               <ThemeToggle />
+              {onLogout && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogout}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  登出
+                </Button>
+              )}
             </div>
           </div>
         </header>
@@ -188,6 +199,17 @@ export default function BossDashboard({
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
             <ThemeToggle />
+            {onLogout && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLogout}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                登出
+              </Button>
+            )}
           </div>
         </div>
       </header>

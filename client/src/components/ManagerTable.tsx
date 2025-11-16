@@ -13,7 +13,7 @@ import type { Language } from "@/lib/i18n";
 interface ManagerData {
   id: string;
   name: string;
-  email: string;
+  username: string;
   familiesCount: number;
   childrenCount: number;
 }
@@ -33,7 +33,7 @@ export default function ManagerTable({ managers, language, onEdit, onDelete, hid
         <TableHeader>
           <TableRow>
             <TableHead>{language === 'zh-TW' ? '姓名' : 'Name'}</TableHead>
-            <TableHead>{language === 'zh-TW' ? '電子郵件' : 'Email'}</TableHead>
+            <TableHead>{language === 'zh-TW' ? '用戶名' : 'Username'}</TableHead>
             <TableHead>{language === 'zh-TW' ? '負責家庭數' : 'Families'}</TableHead>
             <TableHead>{language === 'zh-TW' ? '負責孩子數' : 'Children'}</TableHead>
             {!hideActions && <TableHead className="text-right">{language === 'zh-TW' ? '操作' : 'Actions'}</TableHead>}
@@ -43,7 +43,7 @@ export default function ManagerTable({ managers, language, onEdit, onDelete, hid
           {managers.map((manager) => (
             <TableRow key={manager.id} data-testid={`row-manager-${manager.id}`}>
               <TableCell className="font-medium">{manager.name}</TableCell>
-              <TableCell className="text-muted-foreground">{manager.email}</TableCell>
+              <TableCell className="text-muted-foreground">{manager.username}</TableCell>
               <TableCell className="font-mono">{manager.familiesCount}</TableCell>
               <TableCell className="font-mono">{manager.childrenCount}</TableCell>
               {!hideActions && (

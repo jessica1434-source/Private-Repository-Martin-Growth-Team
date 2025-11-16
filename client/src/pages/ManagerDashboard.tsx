@@ -8,6 +8,7 @@ import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
+import { LogOut } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -90,6 +91,17 @@ export default function ManagerDashboard({
             <div className="flex items-center gap-2">
               <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
               <ThemeToggle />
+              {onLogout && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogout}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  登出
+                </Button>
+              )}
             </div>
           </div>
         </header>
@@ -124,6 +136,17 @@ export default function ManagerDashboard({
           <div className="flex items-center gap-2">
             <LanguageToggle currentLanguage={language} onLanguageChange={onLanguageChange} />
             <ThemeToggle />
+            {onLogout && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLogout}
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                登出
+              </Button>
+            )}
           </div>
         </div>
       </header>
