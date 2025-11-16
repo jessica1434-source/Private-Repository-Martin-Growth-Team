@@ -2,7 +2,12 @@
 
 ## Overview
 
-A bilingual (Traditional Chinese/English) dashboard system for tracking and managing children's growth metrics across Taiwan, Singapore, Malaysia, and Brunei. The application provides two distinct interfaces: a Boss/Manager view for high-level oversight of all families and managers, and a Manager view for hands-on tracking of assigned families. The system emphasizes data visualization, compliance monitoring, and cross-country growth analytics.
+A bilingual (Traditional Chinese/English) dashboard system for tracking and managing children's growth metrics across Taiwan, Singapore, Malaysia, and Brunei. The application provides a three-level role hierarchy:
+- **Boss/Manager**: High-level oversight of all managers (including supervisors) with complete analytics and cross-country trends
+- **Supervisor (主任管理師)**: Mid-level oversight of subordinate managers and their families, without cross-country trend analysis
+- **Manager**: Hands-on tracking of personally assigned families
+
+The system emphasizes data visualization, compliance monitoring, and hierarchical family management with appropriate permissions for each role level.
 
 ## User Preferences
 
@@ -40,8 +45,11 @@ Preferred communication style: Simple, everyday language.
 
 **Routing & Navigation**
 - Role-based navigation without a formal router
-- Three-tier navigation: Role Selection → Manager Selection (if manager) → Dashboard
-- Conditional rendering based on selected role and manager ID
+- Navigation flows:
+  - Boss: Role Selection → Boss Dashboard
+  - Supervisor: Role Selection → Supervisor Selection → Supervisor Dashboard
+  - Manager: Role Selection → Manager Selection → Manager Dashboard
+- Conditional rendering based on selected role and manager/supervisor ID
 
 ### Backend Architecture
 
@@ -57,8 +65,11 @@ Preferred communication style: Simple, everyday language.
 - Neon Database serverless PostgreSQL configured but not yet actively used
 
 **Data Models**
-- **Managers**: Healthcare managers who oversee families
-- **Families**: Family units with compliance status tracking
+- **Managers**: Healthcare managers with hierarchical structure
+  - `role`: 'supervisor' (主任管理師) or 'manager' (管理師)
+  - `supervisorId`: Self-referencing foreign key to establish supervisor-manager relationships
+  - Supervisors oversee multiple managers; managers handle families directly
+- **Families**: Family units with compliance status tracking, assigned to managers
 - **Children**: Individual children within families
 - **GrowthRecords**: Time-series height/weight measurements
 
