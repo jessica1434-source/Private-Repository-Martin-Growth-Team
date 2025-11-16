@@ -45,10 +45,10 @@ Preferred communication style: Simple, everyday language.
 - Country-specific tabbed trend analysis
 
 **Routing & Navigation**
-- **Self-Service Registration**: Users can register with any email via Replit Auth
-- **Onboarding Flow**: First-time users complete a simple onboarding form to enter their name
+- **Username/Password Authentication**: Custom authentication using Passport.js Local Strategy (bcrypt password hashing)
+- **Self-Service Registration**: Users register with username (3-20 chars), password (min 6 chars), and name
 - **Automatic Profile Creation**: New users are automatically created as 'manager' role
-- **Role-Based Routing**: After registration, users are automatically routed to their dashboard:
+- **Role-Based Routing**: After login, users are automatically routed to their dashboard:
   - Boss (role='boss'): BossDashboard with full system access
   - Supervisor (role='supervisor'): SupervisorDashboard with access to subordinate managers  
   - Manager (role='manager'): ManagerDashboard with access to personally assigned families
@@ -68,12 +68,13 @@ Preferred communication style: Simple, everyday language.
 - Database-layer authorization using JOIN queries to filter data by role hierarchy
 
 **Data Models**
-- **Users & Sessions**: Replit Auth integration for secure email-based authentication
-  - `users`: User accounts with OpenID claims
-  - `sessions`: Persistent sessions stored in PostgreSQL
-- **Managers**: Healthcare managers with three-level hierarchy
+- **Sessions**: PostgreSQL-backed sessions via connect-pg-simple
+  - `sessions`: Persistent sessions for Passport.js authentication
+- **Managers**: Healthcare managers with three-level hierarchy and built-in authentication
+  - `username`: Unique username for login (varchar, 3-20 chars)
+  - `passwordHash`: Bcrypt-hashed password (varchar)
+  - `name`: Display name (varchar)
   - `role`: 'boss', 'supervisor' (主任管理師), or 'manager' (管理師)
-  - `userId`: Links to authenticated user accounts
   - `supervisorId`: Self-referencing foreign key for hierarchy
   - Boss has unrestricted access, supervisors oversee managers, managers handle families
 - **Families**: Family units with compliance tracking, assigned to managers
@@ -90,22 +91,27 @@ Preferred communication style: Simple, everyday language.
 - CRUD operations maintain data integrity and prevent cross-role data leakage
 
 **Authentication & Authorization**
-- **Replit Auth (OpenID Connect)**: Secure email-based authentication with verification codes
-- **Session Management**: PostgreSQL-backed sessions via connect-pg-simple
-- **Self-Service Onboarding**: 
-  - GET `/api/auth/user`: Returns user with associated manager profile
-  - POST `/api/profile`: Creates new manager profile for authenticated user (default role: 'manager')
-  - Prevents duplicate profile creation
-  - Auto-links user account to manager profile
+- **Passport.js Local Strategy**: Username/password authentication with bcrypt password hashing
+- **Session Management**: PostgreSQL-backed sessions via connect-pg-simple with security enhancements
+  - Session regeneration on login (prevents session fixation attacks)
+  - Complete session destruction on logout
+  - SameSite='lax' cookie configuration for CSRF protection
+- **Authentication Endpoints**: 
+  - POST `/api/auth/register`: Register new user (username, password, name) with auto-login
+  - POST `/api/auth/login`: Login with username and password
+  - POST `/api/auth/logout`: Logout and destroy session
+  - GET `/api/auth/me`: Get current authenticated manager profile
 - **Role-Based Authorization**: All API routes enforce three-tier access control:
   - Boss: Full access to all managers, families, children, and growth records
   - Supervisor: Access restricted to subordinate managers and their data (database-filtered)
   - Manager: Access restricted to personally assigned families and their data (database-filtered)
 - **Security Features**: 
+  - Bcrypt password hashing with salt rounds: 10
   - All routes require authentication (isAuthenticated middleware)
   - Authorization checks on every data access endpoint
   - Database-layer filtering prevents data leakage between roles
   - New registrations default to lowest privilege (manager role)
+  - Username uniqueness validation
 
 ### Design System
 
