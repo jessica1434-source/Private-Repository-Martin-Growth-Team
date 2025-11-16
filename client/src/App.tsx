@@ -33,12 +33,28 @@ function AppContent() {
 
   // If user has no associated manager record, show error message
   if (!manager) {
+    const userEmail = (user as any)?.email;
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-4">No manager profile found for your account.</p>
-          <p className="text-sm text-muted-foreground">Please contact your administrator.</p>
+        <div className="text-center max-w-2xl mx-auto p-8">
+          <h1 className="text-2xl font-bold mb-4">無法訪問系統</h1>
+          <p className="text-muted-foreground mb-4">
+            您的帳號 ({userEmail}) 沒有關聯的管理師資料。
+          </p>
+          <div className="bg-muted/50 p-6 rounded-lg mb-4 text-left">
+            <h2 className="font-semibold mb-3">請使用以下測試帳號登入：</h2>
+            <div className="space-y-2 text-sm">
+              <p><strong>老闆帳號：</strong> boss@example.com</p>
+              <p><strong>主任管理師：</strong> supervisor1@example.com 或 supervisor2@example.com</p>
+              <p><strong>管理師：</strong> manager1@example.com ~ manager4@example.com</p>
+            </div>
+          </div>
+          <button
+            onClick={() => window.location.href = '/api/logout'}
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-md hover:bg-primary/90"
+          >
+            登出並重新登入
+          </button>
         </div>
       </div>
     );
