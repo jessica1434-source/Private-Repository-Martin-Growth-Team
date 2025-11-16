@@ -16,12 +16,16 @@ interface ManagerDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   managerId: string;
+  onBackToRoleSelection?: () => void;
+  onLogout?: () => void;
 }
 
 export default function ManagerDashboard({ 
   language, 
   onLanguageChange, 
-  managerId
+  managerId,
+  onBackToRoleSelection,
+  onLogout
 }: ManagerDashboardProps) {
   const t = useTranslation(language);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);

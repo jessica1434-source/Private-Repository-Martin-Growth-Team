@@ -21,11 +21,15 @@ import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
 interface BossDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
+  onBackToRoleSelection?: () => void;
+  onLogout?: () => void;
 }
 
 export default function BossDashboard({ 
   language, 
-  onLanguageChange
+  onLanguageChange,
+  onBackToRoleSelection,
+  onLogout
 }: BossDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');

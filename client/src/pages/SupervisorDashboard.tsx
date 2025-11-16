@@ -21,12 +21,16 @@ interface SupervisorDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   supervisorId: string;
+  onBackToRoleSelection?: () => void;
+  onLogout?: () => void;
 }
 
 export default function SupervisorDashboard({ 
   language, 
   onLanguageChange, 
-  supervisorId
+  supervisorId,
+  onBackToRoleSelection,
+  onLogout
 }: SupervisorDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
