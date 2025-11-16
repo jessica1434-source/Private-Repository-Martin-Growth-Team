@@ -77,20 +77,27 @@ export function registerRoutes(app: Express): Server {
         return res.status(401).json({ message: info?.message || "用戶名或密碼錯誤" });
       }
 
-      req.logIn(manager, (err) => {
+      // Regenerate session to prevent fixation attacks
+      req.session.regenerate((err: any) => {
         if (err) {
           return res.status(500).json({ message: "登入失敗" });
         }
 
-        res.json({
-          success: true,
-          message: "登入成功",
-          manager: {
-            id: manager.id,
-            username: manager.username,
-            name: manager.name,
-            role: manager.role,
+        req.logIn(manager, (err) => {
+          if (err) {
+            return res.status(500).json({ message: "登入失敗" });
           }
+
+          res.json({
+            success: true,
+            message: "登入成功",
+            manager: {
+              id: manager.id,
+              username: manager.username,
+              name: manager.name,
+              role: manager.role,
+            }
+          });
         });
       });
     })(req, res, next);
@@ -102,7 +109,15 @@ export function registerRoutes(app: Express): Server {
       if (err) {
         return res.status(500).json({ message: "登出失敗" });
       }
-      res.json({ success: true, message: "已登出" });
+      
+      // Destroy session completely
+      req.session.destroy((err: any) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+        res.clearCookie('connect.sid');
+        res.json({ success: true, message: "已登出" });
+      });
     });
   });
 
@@ -164,7 +179,7 @@ export function registerRoutes(app: Express): Server {
       
       // Boss can access any manager profile
       if (currentManager.role === 'boss') {
-        const manager = await storage.getManager(requestedManagerId);
+        const manager = await storage.getManagerById(requestedManagerId);
         if (!manager) {
           return res.status(404).json({ message: "Manager not found" });
         }
@@ -184,7 +199,7 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      const manager = await storage.getManager(requestedManagerId);
+      const manager = await storage.getManagerById(requestedManagerId);
       if (!manager) {
         return res.status(404).json({ message: "Manager not found" });
       }
