@@ -1,15 +1,23 @@
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "@shared/schema";
+
+export interface AuthManager {
+  id: string;
+  username: string;
+  name: string;
+  role: 'boss' | 'supervisor' | 'manager';
+}
 
 export function useAuth() {
-  const { data: user, isLoading } = useQuery<User>({
-    queryKey: ["/api/auth/user"],
+  const { data: manager, isLoading, error, refetch } = useQuery<AuthManager>({
+    queryKey: ['/api/auth/me'],
     retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return {
-    user,
+    manager,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!manager && !error,
+    refetch,
   };
 }

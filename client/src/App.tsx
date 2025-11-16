@@ -4,8 +4,8 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
-import Landing from "./pages/Landing";
-import Onboarding from "./pages/Onboarding";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import BossDashboard from "./pages/BossDashboard";
 import SupervisorDashboard from "./pages/SupervisorDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
@@ -16,39 +16,53 @@ function AppContent() {
     const saved = localStorage.getItem('language');
     return (saved as Language) || 'zh-TW';
   });
-  const { user, isLoading, isAuthenticated } = useAuth();
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const { manager, isLoading, isAuthenticated, refetch } = useAuth();
 
   useEffect(() => {
     localStorage.setItem('language', language);
   }, [language]);
 
-  // Show landing page if not authenticated or still loading
-  if (isLoading || !isAuthenticated) {
+  // Show loading state
+  if (isLoading) {
     return (
-      <Landing />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg">載入中...</div>
+        </div>
+      </div>
     );
   }
 
-  // Get manager information from user object (attached by backend)
-  const manager = (user as any)?.manager;
-  const userEmail = (user as any)?.email;
-
-  // If user has no associated manager record, show onboarding
-  if (!manager && !onboardingComplete) {
+  // Show auth pages if not authenticated
+  if (!isAuthenticated || !manager) {
+    if (showRegister) {
+      return (
+        <Register
+          onRegisterSuccess={() => refetch()}
+          onSwitchToLogin={() => setShowRegister(false)}
+        />
+      );
+    }
+    
     return (
-      <Onboarding
-        userEmail={userEmail}
-        onComplete={() => {
-          setOnboardingComplete(true);
-          window.location.reload();
-        }}
+      <Login
+        onLoginSuccess={() => refetch()}
+        onSwitchToRegister={() => setShowRegister(true)}
       />
     );
   }
 
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      window.location.reload();
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.reload();
+    }
   };
 
   // Route based on role
@@ -84,7 +98,7 @@ function AppContent() {
   );
 }
 
-function App() {
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -94,5 +108,3 @@ function App() {
     </QueryClientProvider>
   );
 }
-
-export default App;

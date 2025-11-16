@@ -1,74 +1,131 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { getAuthContext } from "./auth-helper";
+import { setupAuth, isAuthenticated, getCurrentManager } from "./auth";
+import passport from "passport";
+import bcrypt from "bcrypt";
+import { registerSchema, loginSchema, type RegisterData, type LoginData } from "@shared/schema";
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export function registerRoutes(app: Express): Server {
   // Setup authentication
-  await setupAuth(app);
+  setupAuth(app);
 
-  // Auth route - returns user with associated manager information
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Register new user
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const email = req.user.claims.email;
-      const user = await storage.getUser(userId);
+      const validation = registerSchema.safeParse(req.body);
       
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "驗證失敗", 
+          errors: validation.error.errors 
+        });
       }
 
-      // Check if manager profile exists (don't auto-create yet)
-      const manager = await storage.getManagerByUserId(userId);
-      
-      res.json({ ...user, manager: manager ?? null });
+      const { username, password, name }: RegisterData = validation.data;
+
+      // Check if username already exists
+      const existingManager = await storage.getManagerByUsername(username);
+      if (existingManager) {
+        return res.status(400).json({ message: "用戶名已存在" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create manager with default role
+      const manager = await storage.createManagerWithPassword(
+        username,
+        passwordHash,
+        name,
+        'manager'
+      );
+
+      res.json({ 
+        success: true, 
+        message: "註冊成功",
+        manager: {
+          id: manager.id,
+          username: manager.username,
+          name: manager.name,
+          role: manager.role,
+        }
+      });
     } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "註冊失敗" });
     }
   });
 
-  // Profile creation route - creates manager profile for authenticated user
-  app.post('/api/profile', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const email = req.user.claims.email;
-      const { name } = req.body;
-
-      if (!name || name.trim().length < 2) {
-        return res.status(400).json({ message: "Name is required and must be at least 2 characters" });
-      }
-
-      // Check if manager already exists
-      const existingManager = await storage.getManagerByUserId(userId);
-      if (existingManager) {
-        return res.status(400).json({ message: "Profile already exists" });
-      }
-
-      // Create new manager with default role 'manager'
-      const newManager = await storage.createManager({
-        name: name.trim(),
-        email,
-        role: 'manager',
-        supervisorId: null,
+  // Login
+  app.post('/api/auth/login', (req, res, next) => {
+    const validation = loginSchema.safeParse(req.body);
+    
+    if (!validation.success) {
+      return res.status(400).json({ 
+        message: "驗證失敗", 
+        errors: validation.error.errors 
       });
-
-      // Link to user
-      await storage.linkUserToManagerByEmail(email, userId);
-
-      res.json({ success: true, manager: newManager });
-    } catch (error) {
-      console.error("Error creating profile:", error);
-      res.status(500).json({ message: "Failed to create profile" });
     }
+
+    passport.authenticate('local', (err: any, manager: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: "登入失敗" });
+      }
+      
+      if (!manager) {
+        return res.status(401).json({ message: info?.message || "用戶名或密碼錯誤" });
+      }
+
+      req.logIn(manager, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "登入失敗" });
+        }
+
+        res.json({
+          success: true,
+          message: "登入成功",
+          manager: {
+            id: manager.id,
+            username: manager.username,
+            name: manager.name,
+            role: manager.role,
+          }
+        });
+      });
+    })(req, res, next);
+  });
+
+  // Logout
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "登出失敗" });
+      }
+      res.json({ success: true, message: "已登出" });
+    });
+  });
+
+  // Get current user
+  app.get('/api/auth/me', isAuthenticated, (req: any, res) => {
+    const manager = getCurrentManager(req);
+    if (!manager) {
+      return res.status(401).json({ message: "未登入" });
+    }
+
+    res.json({
+      id: manager.id,
+      username: manager.username,
+      name: manager.name,
+      role: manager.role,
+    });
   });
 
   // Manager routes
   app.get('/api/managers', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -96,8 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/managers/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const currentManager = await storage.getManagerByUserId(userId);
+      
+      const currentManager = getCurrentManager(req);
       
       if (!currentManager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -140,8 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/managers/supervisor/:supervisorId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -169,8 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Family routes
   app.get('/api/families', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -199,8 +256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/families/manager/:managerId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -239,8 +296,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Children routes
   app.get('/api/children', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -269,8 +326,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/children/family/:familyId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -314,8 +371,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Growth records routes
   app.get('/api/growth-records', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
@@ -344,8 +401,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/growth-records/child/:childId', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const manager = await storage.getManagerByUserId(userId);
+      
+      const manager = getCurrentManager(req);
       
       if (!manager) {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
