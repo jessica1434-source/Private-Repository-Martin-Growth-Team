@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { getAuthContext } from "./auth-helper";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -11,16 +12,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const email = req.user.claims.email;
       const user = await storage.getUser(userId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Also fetch the manager profile associated with this user
-      const manager = await storage.getManagerByUserId(userId);
+      // Use auth context to get or link manager profile
+      const context = await getAuthContext(userId, email, storage);
       
-      res.json({ ...user, manager });
+      res.json({ ...user, manager: context?.manager ?? null });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });

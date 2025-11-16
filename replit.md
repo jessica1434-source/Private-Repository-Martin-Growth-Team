@@ -31,7 +31,8 @@ Preferred communication style: Simple, everyday language.
 **State Management**
 - React Query (@tanstack/react-query) for server state management and data fetching
 - Local component state via React hooks (useState, useEffect)
-- Mock data storage pattern (MemStorage) currently used, designed to be replaced with actual backend
+- **PostgreSQL Database**: Fully migrated from in-memory storage to persistent database
+- All dashboards fetch data via React Query from authenticated API endpoints
 
 **Internationalization**
 - Custom translation system supporting Traditional Chinese (zh-TW) and English (en)
@@ -44,12 +45,12 @@ Preferred communication style: Simple, everyday language.
 - Country-specific tabbed trend analysis
 
 **Routing & Navigation**
-- Role-based navigation without a formal router
-- Navigation flows:
-  - Boss: Role Selection → Boss Dashboard
-  - Supervisor: Role Selection → Supervisor Selection → Supervisor Dashboard
-  - Manager: Role Selection → Manager Selection → Manager Dashboard
-- Conditional rendering based on selected role and manager/supervisor ID
+- **Email-Based Authentication**: Users log in via Replit Auth with their email
+- Automatic role detection and routing based on manager profile:
+  - Boss (role='boss'): Automatically routed to BossDashboard with full system access
+  - Supervisor (role='supervisor'): Routed to SupervisorDashboard with access to subordinate managers
+  - Manager (role='manager'): Routed to ManagerDashboard with access to assigned families
+- First-time login automatically links user account to manager profile via email matching
 
 ### Backend Architecture
 
@@ -59,28 +60,45 @@ Preferred communication style: Simple, everyday language.
 - Vite integration for development with HMR and production static file serving
 
 **Database Layer**
-- Drizzle ORM configured for PostgreSQL
+- **Drizzle ORM with PostgreSQL**: Fully integrated with Neon serverless database
 - Type-safe schema definitions with Zod validation
 - Schema-first approach with generated TypeScript types
-- Neon Database serverless PostgreSQL configured but not yet actively used
+- Database-layer authorization using JOIN queries to filter data by role hierarchy
 
 **Data Models**
-- **Managers**: Healthcare managers with hierarchical structure
-  - `role`: 'supervisor' (主任管理師) or 'manager' (管理師)
-  - `supervisorId`: Self-referencing foreign key to establish supervisor-manager relationships
-  - Supervisors oversee multiple managers; managers handle families directly
-- **Families**: Family units with compliance status tracking, assigned to managers
+- **Users & Sessions**: Replit Auth integration for secure email-based authentication
+  - `users`: User accounts with OpenID claims
+  - `sessions`: Persistent sessions stored in PostgreSQL
+- **Managers**: Healthcare managers with three-level hierarchy
+  - `role`: 'boss', 'supervisor' (主任管理師), or 'manager' (管理師)
+  - `userId`: Links to authenticated user accounts
+  - `supervisorId`: Self-referencing foreign key for hierarchy
+  - Boss has unrestricted access, supervisors oversee managers, managers handle families
+- **Families**: Family units with compliance tracking, assigned to managers
 - **Children**: Individual children within families
 - **GrowthRecords**: Time-series height/weight measurements
 
 **Storage Pattern**
-- Currently using in-memory storage (MemStorage) with IStorage interface
-- Designed for easy migration to database-backed storage
-- CRUD operations abstracted through storage interface
+- **PostgreSQL-backed Storage**: Full implementation with DbStorage class
+- Database-layer authorization using JOIN queries to enforce role-based access
+- Specialized filtering methods:
+  - `getFamiliesForSupervisor`: Filters families via manager hierarchy JOIN
+  - `getChildrenForManager/Supervisor`: Multi-level JOINs for data scoping
+  - `getGrowthRecordsForManager/Supervisor`: Triple JOINs for complete isolation
+- CRUD operations maintain data integrity and prevent cross-role data leakage
 
-**Authentication & Sessions**
-- Session management infrastructure present (connect-pg-simple)
-- No authentication currently implemented - role selection is open
+**Authentication & Authorization**
+- **Replit Auth (OpenID Connect)**: Secure email-based authentication
+- **Session Management**: PostgreSQL-backed sessions via connect-pg-simple
+- **Automatic Account Linking**: First login links user to manager profile by email
+- **Role-Based Authorization**: All API routes enforce three-tier access control:
+  - Boss: Full access to all managers, families, children, and growth records
+  - Supervisor: Access restricted to subordinate managers and their data (database-filtered)
+  - Manager: Access restricted to personally assigned families and their data (database-filtered)
+- **Security Features**: 
+  - All routes require authentication (isAuthenticated middleware)
+  - Authorization checks on every data access endpoint
+  - Database-layer filtering prevents data leakage between roles
 
 ### Design System
 
@@ -146,5 +164,31 @@ Preferred communication style: Simple, everyday language.
 
 ### Deployment & Hosting
 - **Replit**: Development and deployment platform with custom Vite plugins
-- Environment variable configuration for database connection (DATABASE_URL)
+- Environment variables:
+  - `DATABASE_URL`: Neon PostgreSQL connection string
+  - `SESSION_SECRET`: Secure session encryption key
+  - `ISSUER_URL`: Replit Auth OpenID Connect issuer
 - Production build outputs to `dist/public` directory
+
+## Test Accounts (November 2025)
+
+The database is seeded with the following test accounts. Use these emails to log in via Replit Auth:
+
+### Boss Account
+- **Email**: `boss@example.com`
+- **Name**: 總經理 (General Manager)
+- **Access**: Full system access to all data
+
+### Supervisor Accounts
+- **Email**: `supervisor1@example.com` - 黃主任
+  - Manages: manager1@example.com, manager2@example.com
+- **Email**: `supervisor2@example.com` - 周主任
+  - Manages: manager3@example.com, manager4@example.com
+
+### Manager Accounts
+- `manager1@example.com` - 陳美玲 (under 黃主任)
+- `manager2@example.com` - 林志豪 (under 黃主任)
+- `manager3@example.com` - 王雅婷 (under 周主任)
+- `manager4@example.com` - 張建國 (under 周主任)
+
+**Note**: First-time login with any of these emails will automatically link the user account to the corresponding manager profile. Subsequent logins will be instant.
