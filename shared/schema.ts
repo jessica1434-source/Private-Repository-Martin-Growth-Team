@@ -27,11 +27,13 @@ export const users = pgTable("users", {
 
 export const managers = pgTable("managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
+  username: text("username").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
   role: text("role").notNull().default('manager'),
   supervisorId: varchar("supervisor_id").references((): any => managers.id),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const families = pgTable("families", {
@@ -59,15 +61,35 @@ export const growthRecords = pgTable("growth_records", {
   notes: text("notes").notNull().default(''),
 });
 
-export const insertManagerSchema = createInsertSchema(managers).omit({ id: true });
+export const insertManagerSchema = createInsertSchema(managers).omit({ 
+  id: true, 
+  passwordHash: true,
+  lastLoginAt: true,
+  createdAt: true,
+});
+
 export const insertFamilySchema = createInsertSchema(families).omit({ id: true });
 export const insertChildSchema = createInsertSchema(children).omit({ id: true });
 export const insertGrowthRecordSchema = createInsertSchema(growthRecords).omit({ id: true });
+
+// Auth schemas
+export const registerSchema = z.object({
+  username: z.string().min(3, "用戶名至少需要3個字符").max(20, "用戶名不能超過20個字符"),
+  password: z.string().min(6, "密碼至少需要6個字符"),
+  name: z.string().min(2, "姓名至少需要2個字符").max(50, "姓名不能超過50個字符"),
+});
+
+export const loginSchema = z.object({
+  username: z.string().min(1, "請輸入用戶名"),
+  password: z.string().min(1, "請輸入密碼"),
+});
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type Manager = typeof managers.$inferSelect;
 export type InsertManager = z.infer<typeof insertManagerSchema>;
+export type RegisterData = z.infer<typeof registerSchema>;
+export type LoginData = z.infer<typeof loginSchema>;
 export type Family = typeof families.$inferSelect;
 export type InsertFamily = z.infer<typeof insertFamilySchema>;
 export type Child = typeof children.$inferSelect;

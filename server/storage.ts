@@ -19,20 +19,17 @@ import { db } from "./db";
 import { eq } from "drizzle-orm";
 
 export interface IStorage {
-  // User operations (required for Replit Auth)
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
-  linkUserToManagerByEmail(userId: string, email: string): Promise<void>;
-
+  // Manager authentication operations
+  getManagerByUsername(username: string): Promise<Manager | undefined>;
+  getManagerById(id: string): Promise<Manager | undefined>;
+  createManagerWithPassword(username: string, passwordHash: string, name: string, role?: string): Promise<Manager>;
+  updateManagerLastLogin(id: string): Promise<void>;
+  
   // Manager operations
-  getManagerByUserId(userId: string): Promise<Manager | undefined>;
-  getManagerByEmail(email: string): Promise<Manager | undefined>;
-  getManager(id: string): Promise<Manager | undefined>;
   getAllManagers(): Promise<Manager[]>;
   getManagersByRole(role: string): Promise<Manager[]>;
   getManagersBySupervisor(supervisorId: string): Promise<Manager[]>;
-  createManager(manager: InsertManager): Promise<Manager>;
-  updateManager(id: string, manager: Partial<InsertManager>): Promise<Manager>;
+  updateManager(id: string, updates: Partial<Manager>): Promise<Manager>;
   deleteManager(id: string): Promise<void>;
 
   // Family operations
@@ -66,50 +63,41 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  // User operations
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
-  }
-
-  async linkUserToManagerByEmail(userId: string, email: string): Promise<void> {
-    // Find manager by email and update/sync their userId
-    const manager = await this.getManagerByEmail(email);
-    if (manager && manager.userId !== userId) {
-      // Update userId even if already set (handles reassignment/reseeding)
-      await db.update(managers).set({ userId }).where(eq(managers.email, email));
-    }
-  }
-
-  // Manager operations
-  async getManagerByUserId(userId: string): Promise<Manager | undefined> {
-    const [manager] = await db.select().from(managers).where(eq(managers.userId, userId));
+  // Manager authentication operations
+  async getManagerByUsername(username: string): Promise<Manager | undefined> {
+    const [manager] = await db.select().from(managers).where(eq(managers.username, username));
     return manager;
   }
 
-  async getManagerByEmail(email: string): Promise<Manager | undefined> {
-    const [manager] = await db.select().from(managers).where(eq(managers.email, email));
-    return manager;
-  }
-
-  async getManager(id: string): Promise<Manager | undefined> {
+  async getManagerById(id: string): Promise<Manager | undefined> {
     const [manager] = await db.select().from(managers).where(eq(managers.id, id));
     return manager;
+  }
+
+  async createManagerWithPassword(
+    username: string,
+    passwordHash: string,
+    name: string,
+    role: string = 'manager'
+  ): Promise<Manager> {
+    const [manager] = await db
+      .insert(managers)
+      .values({
+        username,
+        passwordHash,
+        name,
+        role,
+        supervisorId: null,
+      })
+      .returning();
+    return manager;
+  }
+
+  async updateManagerLastLogin(id: string): Promise<void> {
+    await db
+      .update(managers)
+      .set({ lastLoginAt: new Date() })
+      .where(eq(managers.id, id));
   }
 
   async getAllManagers(): Promise<Manager[]> {
@@ -129,8 +117,8 @@ export class DatabaseStorage implements IStorage {
     return manager;
   }
 
-  async updateManager(id: string, managerData: Partial<InsertManager>): Promise<Manager> {
-    const [manager] = await db.update(managers).set(managerData).where(eq(managers.id, id)).returning();
+  async updateManager(id: string, updates: Partial<Manager>): Promise<Manager> {
+    const [manager] = await db.update(managers).set(updates).where(eq(managers.id, id)).returning();
     return manager;
   }
 
