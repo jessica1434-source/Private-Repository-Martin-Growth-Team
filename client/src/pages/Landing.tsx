@@ -4,7 +4,7 @@ import { Users, TrendingUp, Heart, BarChart3 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 export default function Landing() {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   const features = [
     {
@@ -36,6 +36,18 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <div className="container mx-auto px-4 py-16">
+        {/* Language Toggle */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLanguage(language === 'zh-TW' ? 'en' : 'zh-TW')}
+            data-testid="button-language-toggle"
+          >
+            {language === 'zh-TW' ? 'English' : '中文'}
+          </Button>
+        </div>
+        
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
