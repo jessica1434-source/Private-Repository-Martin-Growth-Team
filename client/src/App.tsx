@@ -6,13 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import RoleSelection from "./pages/RoleSelection";
 import ManagerSelection from "./pages/ManagerSelection";
 import BossDashboard from "./pages/BossDashboard";
+import SupervisorDashboard from "./pages/SupervisorDashboard";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import type { Language } from "./lib/i18n";
 import { mockManagers, mockFamilies, mockChildren, mockGrowthRecords } from "./lib/mockData";
 
 function App() {
   const [language, setLanguage] = useState<Language>('zh-TW');
-  const [selectedRole, setSelectedRole] = useState<'boss' | 'manager' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'boss' | 'supervisor' | 'manager' | null>(null);
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
 
   //todo: remove mock functionality - shared data state across all views
@@ -21,7 +22,7 @@ function App() {
   const [children, setChildren] = useState(mockChildren);
   const [growthRecords, setGrowthRecords] = useState(mockGrowthRecords);
 
-  const handleRoleSelect = (role: 'boss' | 'manager') => {
+  const handleRoleSelect = (role: 'boss' | 'supervisor' | 'manager') => {
     setSelectedRole(role);
   };
 
@@ -63,13 +64,39 @@ function App() {
             setGrowthRecords={setGrowthRecords}
           />
         )}
+        {selectedRole === 'supervisor' && !selectedManagerId && (
+          <ManagerSelection
+            language={language}
+            onLanguageChange={setLanguage}
+            onSelectManager={handleManagerSelect}
+            onBack={handleBackToRoleSelection}
+            managers={managers.filter(m => m.role === 'supervisor')}
+            roleType="supervisor"
+          />
+        )}
+        {selectedRole === 'supervisor' && selectedManagerId && (
+          <SupervisorDashboard
+            language={language}
+            onLanguageChange={setLanguage}
+            supervisorId={selectedManagerId}
+            onBack={handleBackToManagerSelection}
+            managers={managers}
+            families={families}
+            setFamilies={setFamilies}
+            children={children}
+            setChildren={setChildren}
+            growthRecords={growthRecords}
+            setGrowthRecords={setGrowthRecords}
+          />
+        )}
         {selectedRole === 'manager' && !selectedManagerId && (
           <ManagerSelection
             language={language}
             onLanguageChange={setLanguage}
             onSelectManager={handleManagerSelect}
             onBack={handleBackToRoleSelection}
-            managers={managers}
+            managers={managers.filter(m => m.role === 'manager')}
+            roleType="manager"
           />
         )}
         {selectedRole === 'manager' && selectedManagerId && (

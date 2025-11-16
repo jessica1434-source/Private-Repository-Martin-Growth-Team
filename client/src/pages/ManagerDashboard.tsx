@@ -16,6 +16,8 @@ interface Manager {
   id: string;
   name: string;
   email: string;
+  role: string;
+  supervisorId: string | null;
 }
 
 interface Family {

@@ -7,6 +7,8 @@ export const managers = pgTable("managers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
+  role: text("role").notNull().default('manager'),
+  supervisorId: varchar("supervisor_id").references((): any => managers.id),
 });
 
 export const families = pgTable("families", {

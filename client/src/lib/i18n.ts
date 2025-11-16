@@ -5,8 +5,10 @@ export const translations = {
     // Role Selection
     selectRole: '選擇身份',
     boss: '老闆/主管',
+    supervisor: '主任管理師',
     manager: '管理師',
     bossDescription: '查看所有數據、管理家庭分配和績效',
+    supervisorDescription: '管理旗下管理師和追蹤家庭狀況',
     managerDescription: '記錄和管理您負責的家庭',
     
     // Navigation
@@ -85,9 +87,11 @@ export const translations = {
   'en': {
     // Role Selection
     selectRole: 'Select Role',
-    boss: 'Boss/Supervisor',
+    boss: 'Boss/Director',
+    supervisor: 'Supervisor',
     manager: 'Manager',
     bossDescription: 'View all data, manage family assignments and performance',
+    supervisorDescription: 'Manage your team of managers and track family progress',
     managerDescription: 'Record and manage your assigned families',
     
     // Navigation

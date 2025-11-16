@@ -9,6 +9,8 @@ interface Manager {
   id: string;
   name: string;
   email: string;
+  role: string;
+  supervisorId: string | null;
 }
 
 interface ManagerSelectionProps {
@@ -17,6 +19,7 @@ interface ManagerSelectionProps {
   onSelectManager: (managerId: string) => void;
   onBack: () => void;
   managers: Manager[];
+  roleType?: 'supervisor' | 'manager';
 }
 
 export default function ManagerSelection({ 
@@ -24,7 +27,8 @@ export default function ManagerSelection({
   onLanguageChange, 
   onSelectManager,
   onBack,
-  managers
+  managers,
+  roleType = 'manager'
 }: ManagerSelectionProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -35,7 +39,9 @@ export default function ManagerSelection({
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <h1 className="text-2xl font-bold">
-              {language === 'zh-TW' ? '選擇管理師身份' : 'Select Manager'}
+              {roleType === 'supervisor' 
+                ? (language === 'zh-TW' ? '選擇主任管理師身份' : 'Select Supervisor')
+                : (language === 'zh-TW' ? '選擇管理師身份' : 'Select Manager')}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -48,9 +54,9 @@ export default function ManagerSelection({
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-lg text-muted-foreground">
-              {language === 'zh-TW' 
-                ? '請選擇您的管理師帳號以繼續' 
-                : 'Please select your manager account to continue'}
+              {roleType === 'supervisor'
+                ? (language === 'zh-TW' ? '請選擇您的主任管理師帳號以繼續' : 'Please select your supervisor account to continue')
+                : (language === 'zh-TW' ? '請選擇您的管理師帳號以繼續' : 'Please select your manager account to continue')}
             </p>
           </div>
           <div className="grid gap-4">

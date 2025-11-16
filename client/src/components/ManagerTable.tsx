@@ -23,9 +23,10 @@ interface ManagerTableProps {
   language: Language;
   onEdit?: (managerId: string) => void;
   onDelete?: (managerId: string) => void;
+  hideActions?: boolean;
 }
 
-export default function ManagerTable({ managers, language, onEdit, onDelete }: ManagerTableProps) {
+export default function ManagerTable({ managers, language, onEdit, onDelete, hideActions = false }: ManagerTableProps) {
   return (
     <div className="rounded-md border" data-testid="table-managers">
       <Table>
@@ -35,7 +36,7 @@ export default function ManagerTable({ managers, language, onEdit, onDelete }: M
             <TableHead>{language === 'zh-TW' ? '電子郵件' : 'Email'}</TableHead>
             <TableHead>{language === 'zh-TW' ? '負責家庭數' : 'Families'}</TableHead>
             <TableHead>{language === 'zh-TW' ? '負責孩子數' : 'Children'}</TableHead>
-            <TableHead className="text-right">{language === 'zh-TW' ? '操作' : 'Actions'}</TableHead>
+            {!hideActions && <TableHead className="text-right">{language === 'zh-TW' ? '操作' : 'Actions'}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -45,26 +46,28 @@ export default function ManagerTable({ managers, language, onEdit, onDelete }: M
               <TableCell className="text-muted-foreground">{manager.email}</TableCell>
               <TableCell className="font-mono">{manager.familiesCount}</TableCell>
               <TableCell className="font-mono">{manager.childrenCount}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onEdit?.(manager.id)}
-                    data-testid={`button-edit-${manager.id}`}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    onClick={() => onDelete?.(manager.id)}
-                    data-testid={`button-delete-${manager.id}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
+              {!hideActions && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onEdit?.(manager.id)}
+                      data-testid={`button-edit-${manager.id}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onDelete?.(manager.id)}
+                      data-testid={`button-delete-${manager.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

@@ -1,9 +1,11 @@
 //todo: remove mock functionality
 export const mockManagers = [
-  { id: '1', name: '陳美玲', email: 'chen@example.com' },
-  { id: '2', name: '林志明', email: 'lin@example.com' },
-  { id: '3', name: '王小華', email: 'wang@example.com' },
-  { id: '4', name: '張雅婷', email: 'zhang@example.com' },
+  { id: 's1', name: '黃主任', email: 'huang@example.com', role: 'supervisor', supervisorId: null },
+  { id: 's2', name: '周主任', email: 'zhou@example.com', role: 'supervisor', supervisorId: null },
+  { id: '1', name: '陳美玲', email: 'chen@example.com', role: 'manager', supervisorId: 's1' },
+  { id: '2', name: '林志明', email: 'lin@example.com', role: 'manager', supervisorId: 's1' },
+  { id: '3', name: '王小華', email: 'wang@example.com', role: 'manager', supervisorId: 's2' },
+  { id: '4', name: '張雅婷', email: 'zhang@example.com', role: 'manager', supervisorId: 's2' },
 ];
 
 export const mockFamilies = [

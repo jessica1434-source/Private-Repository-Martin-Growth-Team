@@ -5,12 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
-import TrendChart from "@/components/TrendChart";
 import BirthdayCard from "@/components/BirthdayCard";
 import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
-import AddManagerDialog from "@/components/AddManagerDialog";
-import EditManagerDialog from "@/components/EditManagerDialog";
 import AddFamilyDialog from "@/components/AddFamilyDialog";
 import FamilyStatusDialog from "@/components/FamilyStatusDialog";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
@@ -23,8 +20,8 @@ interface Manager {
   id: string;
   name: string;
   email: string;
-  role: string;
-  supervisorId: string | null;
+  role?: string;
+  supervisorId?: string | null;
 }
 
 interface Family {
@@ -52,12 +49,12 @@ interface GrowthRecord {
   notes: string;
 }
 
-interface BossDashboardProps {
+interface SupervisorDashboardProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
   onBack: () => void;
+  supervisorId: string;
   managers: Manager[];
-  setManagers: (managers: Manager[]) => void;
   families: Family[];
   setFamilies: (families: Family[]) => void;
   children: Child[];
@@ -66,79 +63,57 @@ interface BossDashboardProps {
   setGrowthRecords: (records: GrowthRecord[]) => void;
 }
 
-export default function BossDashboard({ 
+export default function SupervisorDashboard({ 
   language, 
   onLanguageChange, 
   onBack,
+  supervisorId,
   managers,
-  setManagers,
   families,
   setFamilies,
   children,
   setChildren,
   growthRecords,
   setGrowthRecords
-}: BossDashboardProps) {
+}: SupervisorDashboardProps) {
   const t = useTranslation(language);
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
-  const [addManagerOpen, setAddManagerOpen] = useState(false);
-  const [editManagerOpen, setEditManagerOpen] = useState(false);
   const [addFamilyOpen, setAddFamilyOpen] = useState(false);
   const [editFamilyStatusOpen, setEditFamilyStatusOpen] = useState(false);
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
-  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
 
-  const totalChildren = children.length;
-  const totalManagers = managers.length;
-  const highRiskFamilies = families.filter(f => f.complianceStatus === 'red').length;
-  const stableFamilies = families.filter(f => f.complianceStatus === 'green').length;
+  const subordinateManagers = managers.filter(m => m.supervisorId === supervisorId);
+  const subordinateManagerIds = subordinateManagers.map(m => m.id);
+  const subordinateFamilies = families.filter(f => subordinateManagerIds.includes(f.managerId));
+  const subordinateFamilyIds = subordinateFamilies.map(f => f.id);
+  const subordinateChildren = children.filter(c => subordinateFamilyIds.includes(c.familyId));
 
-  const performanceData = [
-    { name: '陳美玲', height: 2.3, weight: 0.8 },
-    { name: '林志明', height: 1.9, weight: 0.6 },
-    { name: '王小華', height: 2.5, weight: 0.9 },
-    { name: '張雅婷', height: 2.1, weight: 0.7 },
-  ];
+  const totalChildren = subordinateChildren.length;
+  const totalManagers = subordinateManagers.length;
+  const highRiskFamilies = subordinateFamilies.filter(f => f.complianceStatus === 'red').length;
+  const stableFamilies = subordinateFamilies.filter(f => f.complianceStatus === 'green').length;
 
-  const trendData = {
-    taiwan: [
-      { month: '7月', height: 118.5, weight: 22.3 },
-      { month: '8月', height: 119.2, weight: 22.8 },
-      { month: '9月', height: 120.1, weight: 23.2 },
-      { month: '10月', height: 120.8, weight: 23.7 },
-      { month: '11月', height: 121.5, weight: 24.1 },
-    ],
-    singapore: [
-      { month: '7月', height: 117.2, weight: 21.8 },
-      { month: '8月', height: 118.1, weight: 22.3 },
-      { month: '9月', height: 118.9, weight: 22.7 },
-      { month: '10月', height: 119.6, weight: 23.1 },
-      { month: '11月', height: 120.3, weight: 23.5 },
-    ],
-    malaysia: [
-      { month: 'Jul', height: 116.8, weight: 21.5 },
-      { month: 'Aug', height: 117.6, weight: 22.0 },
-      { month: 'Sep', height: 118.4, weight: 22.4 },
-      { month: 'Oct', height: 119.1, weight: 22.9 },
-      { month: 'Nov', height: 119.8, weight: 23.3 },
-    ],
-    brunei: [
-      { month: 'Jul', height: 118.0, weight: 22.1 },
-      { month: 'Aug', height: 118.7, weight: 22.6 },
-      { month: 'Sep', height: 119.5, weight: 23.0 },
-      { month: 'Oct', height: 120.2, weight: 23.5 },
-      { month: 'Nov', height: 121.0, weight: 23.9 },
-    ],
-  };
+  const performanceData = subordinateManagers.map(manager => {
+    const managerFamilies = subordinateFamilies.filter(f => f.managerId === manager.id);
+    const managerChildren = subordinateChildren.filter(c => 
+      managerFamilies.some(f => f.id === c.familyId)
+    );
+    
+    return {
+      name: manager.name,
+      height: Math.random() * 2 + 1,
+      weight: Math.random() * 1 + 0.5,
+    };
+  });
 
-  const upcomingBirthdays = children
+  const upcomingBirthdays = subordinateChildren
     .slice(0, 5)
     .sort((a, b) => new Date(a.birthday).getMonth() - new Date(b.birthday).getMonth());
 
-  const familyTableData = families.map(family => {
+  const familyTableData = subordinateFamilies.map(family => {
     const manager = managers.find(m => m.id === family.managerId);
-    const childrenCount = children.filter(c => c.familyId === family.id).length;
+    const childrenCount = subordinateChildren.filter(c => c.familyId === family.id).length;
     return {
       id: family.id,
       familyName: family.familyName,
@@ -152,10 +127,10 @@ export default function BossDashboard({
     };
   });
 
-  const managerTableData = managers.map(manager => {
-    const familiesCount = families.filter(f => f.managerId === manager.id).length;
-    const childrenCount = children.filter(c => 
-      families.some(f => f.id === c.familyId && f.managerId === manager.id)
+  const managerTableData = subordinateManagers.map(manager => {
+    const familiesCount = subordinateFamilies.filter(f => f.managerId === manager.id).length;
+    const childrenCount = subordinateChildren.filter(c => 
+      subordinateFamilies.some(f => f.id === c.familyId && f.managerId === manager.id)
     ).length;
     return {
       id: manager.id,
@@ -165,30 +140,6 @@ export default function BossDashboard({
       childrenCount,
     };
   });
-
-  const handleAddManager = (data: { name: string; email: string }) => {
-    const newManager = {
-      id: `m${managers.length + 1}`,
-      name: data.name,
-      email: data.email,
-      role: 'manager',
-      supervisorId: null,
-    };
-    setManagers([...managers, newManager]);
-  };
-
-  const handleEditManager = (managerId: string) => {
-    setSelectedManagerId(managerId);
-    setEditManagerOpen(true);
-  };
-
-  const handleSaveManager = (data: { name: string; email: string }) => {
-    setManagers(managers.map(m => 
-      m.id === selectedManagerId 
-        ? { ...m, name: data.name, email: data.email }
-        : m
-    ));
-  };
 
   const handleAddFamily = (data: {
     familyName: string;
@@ -253,6 +204,8 @@ export default function BossDashboard({
   }, {} as { [childId: string]: typeof growthRecords });
   const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
 
+  const currentSupervisor = managers.find(m => m.id === supervisorId);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur-sm z-50 shadow-sm">
@@ -262,8 +215,8 @@ export default function BossDashboard({
               <Menu className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold">{t.dashboard}</h1>
-              <p className="text-xs text-muted-foreground hidden sm:block">{language === 'zh-TW' ? '總覽管理控制台' : 'Management Overview'}</p>
+              <h1 className="text-xl md:text-2xl font-bold">{currentSupervisor?.name} - {language === 'zh-TW' ? '主任管理師儀表板' : 'Supervisor Dashboard'}</h1>
+              <p className="text-xs text-muted-foreground hidden sm:block">{language === 'zh-TW' ? '管理旗下團隊' : 'Manage your team'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -288,7 +241,7 @@ export default function BossDashboard({
             onClick={() => setActiveTab('managers')}
             data-testid="button-tab-managers"
           >
-            {language === 'zh-TW' ? '管理師管理' : 'Managers'}
+            {language === 'zh-TW' ? '我的管理師' : 'My Managers'}
           </Button>
           <Button 
             variant={activeTab === 'families' ? 'default' : 'outline'}
@@ -306,13 +259,13 @@ export default function BossDashboard({
                 title={t.totalChildren}
                 value={totalChildren}
                 icon={Baby}
-                description={language === 'zh-TW' ? '跨 4 個國家' : 'Across 4 countries'}
+                description={language === 'zh-TW' ? `${totalManagers} 位管理師負責` : `Managed by ${totalManagers} managers`}
               />
               <MetricCard
-                title={t.totalManagers}
+                title={language === 'zh-TW' ? '旗下管理師' : 'My Managers'}
                 value={totalManagers}
                 icon={Users}
-                description={language === 'zh-TW' ? `平均負責 ${Math.round(families.length / totalManagers)} 個家庭` : `Avg ${Math.round(families.length / totalManagers)} families each`}
+                description={language === 'zh-TW' ? `平均負責 ${Math.round(subordinateFamilies.length / Math.max(totalManagers, 1))} 個家庭` : `Avg ${Math.round(subordinateFamilies.length / Math.max(totalManagers, 1))} families each`}
               />
               <MetricCard
                 title={t.highRiskFamilies}
@@ -329,7 +282,7 @@ export default function BossDashboard({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
                 <PerformanceChart
-                  title={t.managerPerformance}
+                  title={language === 'zh-TW' ? '旗下管理師表現' : 'Team Performance'}
                   data={performanceData}
                   language={language}
                 />
@@ -342,46 +295,49 @@ export default function BossDashboard({
                   <CardContent>
                     <ScrollArea className="h-[360px]">
                       <div className="space-y-3">
-                        {upcomingBirthdays.map(child => (
-                          <BirthdayCard
-                            key={child.id}
-                            childName={child.name}
-                            birthday={child.birthday}
-                            language={language}
-                          />
-                        ))}
+                        {upcomingBirthdays.length > 0 ? (
+                          upcomingBirthdays.map(child => (
+                            <BirthdayCard
+                              key={child.id}
+                              childName={child.name}
+                              birthday={child.birthday}
+                              language={language}
+                            />
+                          ))
+                        ) : (
+                          <p className="text-muted-foreground text-center py-8">
+                            {language === 'zh-TW' ? '暫無即將到來的生日' : 'No upcoming birthdays'}
+                          </p>
+                        )}
                       </div>
                     </ScrollArea>
                   </CardContent>
                 </Card>
               </div>
             </div>
-
-            <TrendChart
-              title={t.crossCountryTrends}
-              data={trendData}
-              language={language}
-            />
           </div>
         )}
 
         {activeTab === 'managers' && (
           <div className="space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <CardTitle>{language === 'zh-TW' ? '管理師名單' : 'Manager List'}</CardTitle>
-                <Button onClick={() => setAddManagerOpen(true)} data-testid="button-add-manager">
-                  <Plus className="h-4 w-4 mr-2" />
-                  {language === 'zh-TW' ? '新增管理師' : 'Add Manager'}
-                </Button>
+              <CardHeader>
+                <CardTitle>{language === 'zh-TW' ? '旗下管理師名單' : 'My Managers'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ManagerTable
-                  managers={managerTableData}
-                  language={language}
-                  onEdit={handleEditManager}
-                  onDelete={(id) => console.log('Delete manager:', id)}
-                />
+                {managerTableData.length > 0 ? (
+                  <ManagerTable
+                    managers={managerTableData}
+                    language={language}
+                    onEdit={() => {}}
+                    onDelete={() => {}}
+                    hideActions={true}
+                  />
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    {language === 'zh-TW' ? '尚無旗下管理師' : 'No managers yet'}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -398,41 +354,29 @@ export default function BossDashboard({
                 </Button>
               </CardHeader>
               <CardContent>
-                <FamilyTable
-                  families={familyTableData}
-                  language={language}
-                  onView={handleViewFamily}
-                  onEdit={handleEditFamily}
-                />
+                {familyTableData.length > 0 ? (
+                  <FamilyTable
+                    families={familyTableData}
+                    language={language}
+                    onView={handleViewFamily}
+                    onEdit={handleEditFamily}
+                  />
+                ) : (
+                  <p className="text-muted-foreground text-center py-8">
+                    {language === 'zh-TW' ? '尚無家庭資料' : 'No families yet'}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
         )}
       </main>
 
-      <AddManagerDialog
-        open={addManagerOpen}
-        onOpenChange={setAddManagerOpen}
-        language={language}
-        onSave={handleAddManager}
-      />
-
-      {managers.find(m => m.id === selectedManagerId) && (
-        <EditManagerDialog
-          open={editManagerOpen}
-          onOpenChange={setEditManagerOpen}
-          language={language}
-          currentName={managers.find(m => m.id === selectedManagerId)!.name}
-          currentEmail={managers.find(m => m.id === selectedManagerId)!.email}
-          onSave={handleSaveManager}
-        />
-      )}
-
       <AddFamilyDialog
         open={addFamilyOpen}
         onOpenChange={setAddFamilyOpen}
         language={language}
-        managers={managers}
+        managers={subordinateManagers}
         onSave={handleAddFamily}
       />
 

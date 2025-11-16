@@ -1,4 +1,4 @@
-import { Briefcase, Users } from "lucide-react";
+import { Briefcase, Users, UserCog } from "lucide-react";
 import RoleCard from "@/components/RoleCard";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/i18n";
 interface RoleSelectionProps {
   language: Language;
   onLanguageChange: (lang: Language) => void;
-  onSelectRole: (role: 'boss' | 'manager') => void;
+  onSelectRole: (role: 'boss' | 'supervisor' | 'manager') => void;
 }
 
 export default function RoleSelection({ language, onLanguageChange, onSelectRole }: RoleSelectionProps) {
@@ -37,12 +37,18 @@ export default function RoleSelection({ language, onLanguageChange, onSelectRole
                 : 'Please select your role to access the system'}
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <RoleCard
               title={t.boss}
               description={t.bossDescription}
               icon={Briefcase}
               onClick={() => onSelectRole('boss')}
+            />
+            <RoleCard
+              title={t.supervisor}
+              description={t.supervisorDescription}
+              icon={UserCog}
+              onClick={() => onSelectRole('supervisor')}
             />
             <RoleCard
               title={t.manager}
