@@ -83,6 +83,27 @@ export const translations = {
     loading: '載入中...',
     success: '成功',
     error: '錯誤',
+    
+    // Landing Page
+    children_growth_management_system: '兒童成長管理系統',
+    professional_growth_tracking_platform: '專業的兒童成長追蹤平台，為醫療管理師量身打造',
+    login_to_system: '登入系統',
+    children_growth_tracking: '兒童成長追蹤',
+    track_height_weight_monthly: '每月記錄身高體重，建立完整成長歷史',
+    growth_trends_analysis: '成長趨勢分析',
+    visualize_growth_trends: '視覺化分析成長趨勢，掌握發展狀況',
+    compliance_monitoring: '合規監控',
+    monitor_service_compliance: '監控服務執行狀況，確保家庭追蹤品質',
+    performance_analytics: '績效分析',
+    detailed_performance_metrics: '詳細的績效指標和跨國數據比較',
+    role_based_access: '角色權限管理',
+    role_based_access_description: '系統根據您的角色自動提供相應的功能和數據訪問權限',
+    boss_manager_role: '老闆/主管',
+    boss_role_description: '擁有完整的系統訪問權限，包括所有管理師和主任管理師的數據、跨國趨勢分析、績效管理',
+    supervisor_role: '主任管理師',
+    supervisor_role_description: '管理旗下的管理師團隊，查看和監督所屬管理師的家庭追蹤情況，但不包含跨國趨勢分析',
+    manager_role: '管理師',
+    manager_role_description: '直接管理分配的家庭，記錄兒童成長數據，追蹤服務執行狀況',
   },
   'en': {
     // Role Selection
@@ -166,6 +187,27 @@ export const translations = {
     loading: 'Loading...',
     success: 'Success',
     error: 'Error',
+    
+    // Landing Page
+    children_growth_management_system: "Children's Growth Management System",
+    professional_growth_tracking_platform: 'Professional children growth tracking platform designed for healthcare managers',
+    login_to_system: 'Login to System',
+    children_growth_tracking: "Children's Growth Tracking",
+    track_height_weight_monthly: 'Monthly height and weight tracking with complete growth history',
+    growth_trends_analysis: 'Growth Trends Analysis',
+    visualize_growth_trends: 'Visualize growth trends and monitor development progress',
+    compliance_monitoring: 'Compliance Monitoring',
+    monitor_service_compliance: 'Monitor service execution status and ensure family tracking quality',
+    performance_analytics: 'Performance Analytics',
+    detailed_performance_metrics: 'Detailed performance metrics and cross-country data comparison',
+    role_based_access: 'Role-Based Access Control',
+    role_based_access_description: 'System automatically provides appropriate features and data access based on your role',
+    boss_manager_role: 'Boss/Director',
+    boss_role_description: 'Full system access including all managers and supervisors, cross-country trend analysis, and performance management',
+    supervisor_role: 'Supervisor',
+    supervisor_role_description: 'Manage your team of managers, view and supervise family tracking activities without cross-country trend analysis',
+    manager_role: 'Manager',
+    manager_role_description: 'Directly manage assigned families, record children growth data, and track service execution status',
   }
 };
 
