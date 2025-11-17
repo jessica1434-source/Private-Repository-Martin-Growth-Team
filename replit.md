@@ -11,25 +11,36 @@ The system emphasizes data visualization, compliance monitoring, and hierarchica
 
 ## Recent Changes (November 17, 2025)
 
+**MAJOR PERMISSION REVERSAL (Latest Update)**
+- **Manager**: Now has FULL edit access to all family fields including complianceStatus and managerNotes
+- **Supervisor**: Changed to VIEW-ONLY role - cannot edit, add, or delete any data
+- **Boss**: Retains full system access unchanged
+- **Country Field**: Changed from enum dropdown (taiwan/singapore/malaysia/brunei) to free-text input - users can enter any country name
+
 **Dashboard Role Separation**
 - **Boss Dashboard**: Removed family and child creation capabilities - managers now handle their own data entry
 - **Boss Dashboard**: Focus shifted to oversight with growth results visualization and manager supervision
-- **Supervisor Assignment**: Boss can assign supervisors to managers via PromoteManagerDialog
+- **Supervisor Dashboard**: Completely view-only - all add/edit/delete buttons removed
+- **Manager Dashboard**: Full CRUD capabilities including compliance status and execution notes
 
 **Family Management Permissions**
-- **Manager Restrictions**: Managers can no longer edit complianceStatus (red/yellow/green) or managerNotes (execution notes)
-- **Manager Edit Capability**: Added EditFamilyDialog to ManagerDashboard - managers can edit basic family info (familyName, country, boneAge)
-- **Supervisor/Boss Only**: Only Boss and Supervisor roles can modify compliance status and execution notes via EditFamilyDialog
-- **EditFamilyDialog Enhancement**: Added managerNotes (execution notes) field for Boss/Supervisor roles
+- **Manager Full Access**: Managers can now edit ALL fields including complianceStatus (red/yellow/green) and managerNotes (execution notes)
+- **Manager Edit Capability**: EditFamilyDialog shows all fields enabled for Manager role
+- **Supervisor Read-Only**: Supervisor sees EditFamilyDialog with all fields disabled (view-only mode)
+- **Country Input**: Changed from Select dropdown to free-text Input in AddFamilyDialog and EditFamilyDialog
 
 **Authorization & Security**
-- **Frontend**: Role-based field visibility in EditFamilyDialog (Manager sees only familyName, country, boneAge fields)
+- **Frontend**: 
+  - EditFamilyDialog: Manager sees all enabled fields, Supervisor sees all disabled fields (isSupervisor flag)
+  - FamilyTable: Conditionally renders action buttons based on provided handlers
+  - SupervisorDashboard: Only passes onView handler (no onEdit/onDelete)
 - **Backend**: PATCH /api/families/:id enforces role-scoped updates:
-  - Manager can only update own families and cannot modify complianceStatus, managerNotes, or reassign families
-  - Manager's managerId is always preserved (prevents unauthorized reassignment)
-  - Supervisor/Boss can update all fields including restricted ones
-- **Testing**: E2E tests confirm Manager cannot bypass restrictions via API or UI
-- Database mutations properly handle optional complianceStatus and managerNotes fields
+  - Manager can update all fields (complianceStatus, managerNotes, familyName, country, boneAge) for own families
+  - Manager cannot modify managerId (prevents reassignment)
+  - Supervisor returns 403 on PATCH (enforces read-only at API level)
+  - Boss can update all fields including managerId reassignment
+- **Country Display**: All dashboards now display raw country text value without enum mapping
+- **Testing**: E2E tests confirm Manager can edit complianceStatus/managerNotes, Supervisor UI is view-only
 
 ## User Preferences
 
