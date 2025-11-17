@@ -253,26 +253,43 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Manager not found / 管理員不存在" });
       }
       
-      // Manager can only edit self
+      // Build updateData based on role permissions
+      const updateData: Partial<any> = {};
+      
+      // Manager can only edit self, and ONLY name (cannot change role or supervisorId)
       if (currentManager.role === 'manager') {
         if (targetManagerId !== currentManager.id) {
           return res.status(403).json({ message: "Access denied: Managers can only edit themselves / 無權限：經理只能編輯自己" });
         }
-      }
-      
-      // Supervisor can only edit direct subordinate managers
-      if (currentManager.role === 'supervisor') {
-        if (targetManager.supervisorId !== currentManager.id) {
-          return res.status(403).json({ message: "Access denied: Supervisors can only edit their direct subordinates / 無權限：主管只能編輯直屬下屬" });
+        // Managers can ONLY update their name
+        if (req.body.name) updateData.name = req.body.name;
+        
+        // Block any attempt to change role or supervisorId
+        if (req.body.role || req.body.supervisorId !== undefined) {
+          return res.status(403).json({ message: "Access denied: Managers cannot change role or supervisor / 無權限：經理不能更改角色或主管" });
         }
       }
       
-      // Boss can edit any manager (already validated by role check above)
+      // Supervisor can only edit direct subordinate managers, and CANNOT change roles or supervisorId
+      else if (currentManager.role === 'supervisor') {
+        if (targetManager.supervisorId !== currentManager.id) {
+          return res.status(403).json({ message: "Access denied: Supervisors can only edit their direct subordinates / 無權限：主管只能編輯直屬下屬" });
+        }
+        // Supervisors can ONLY update name
+        if (req.body.name) updateData.name = req.body.name;
+        
+        // Block any attempt to change role or supervisorId
+        if (req.body.role || req.body.supervisorId !== undefined) {
+          return res.status(403).json({ message: "Access denied: Supervisors cannot change roles or reassign managers / 無權限：主管不能更改角色或重新分配管理員" });
+        }
+      }
       
-      const updateData: Partial<any> = {};
-      if (req.body.name) updateData.name = req.body.name;
-      if (req.body.role) updateData.role = req.body.role;
-      if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
+      // Boss can edit any manager and change role/supervisorId
+      else if (currentManager.role === 'boss') {
+        if (req.body.name) updateData.name = req.body.name;
+        if (req.body.role) updateData.role = req.body.role;
+        if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
+      }
       
       const updatedManager = await storage.updateManager(targetManagerId, updateData);
       res.json(updatedManager);
@@ -423,9 +440,19 @@ export function registerRoutes(app: Express): Server {
       // Supervisor can only update families of subordinate managers
       if (manager.role === 'supervisor') {
         const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
-        const canAccess = subordinateManagers.some(m => m.id === family.managerId);
-        if (!canAccess) {
+        
+        // Check current family ownership
+        const canAccessCurrent = subordinateManagers.some(m => m.id === family.managerId);
+        if (!canAccessCurrent) {
           return res.status(403).json({ message: "Access denied: Cannot update this family" });
+        }
+        
+        // If changing managerId, verify new manager is also a subordinate
+        if (req.body.managerId && req.body.managerId !== family.managerId) {
+          const canAccessNew = subordinateManagers.some(m => m.id === req.body.managerId);
+          if (!canAccessNew) {
+            return res.status(403).json({ message: "Access denied: Cannot reassign family to a manager outside your hierarchy" });
+          }
         }
       }
       
