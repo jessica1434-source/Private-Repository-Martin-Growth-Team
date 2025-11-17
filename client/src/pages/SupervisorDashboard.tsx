@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Baby, Users, AlertTriangle, CheckCircle, LogOut, Plus } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -12,16 +12,9 @@ import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
 import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
-import EditFamilyDialog from "@/components/EditFamilyDialog";
-import AddFamilyDialog from "@/components/AddFamilyDialog";
-import AddChildDialog from "@/components/AddChildDialog";
-import EditManagerDialog from "@/components/EditManagerDialog";
-import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -42,17 +35,10 @@ export default function SupervisorDashboard({
   onLogout
 }: SupervisorDashboardProps) {
   const t = useTranslation(language);
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
-  const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
-  const [addFamilyDialogOpen, setAddFamilyDialogOpen] = useState(false);
-  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
-  const [editManagerDialogOpen, setEditManagerDialogOpen] = useState(false);
-  const [growthRecordDialogOpen, setGrowthRecordDialogOpen] = useState(false);
   const [growthHistoryDialogOpen, setGrowthHistoryDialogOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
-  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
   const { data: currentSupervisor, isLoading: supervisorLoading } = useQuery<Manager>({
@@ -604,15 +590,6 @@ export default function SupervisorDashboard({
 
         {activeTab === 'families' && (
           <div className="space-y-6">
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setAddFamilyDialogOpen(true)}
-                data-testid="button-add-family"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'zh-TW' ? '新增家庭' : 'Add Family'}
-              </Button>
-            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{t.families}</CardTitle>
@@ -623,8 +600,6 @@ export default function SupervisorDashboard({
                     families={familyTableData}
                     language={language}
                     onView={handleViewFamily}
-                    onEdit={handleEditFamily}
-                    onDelete={handleDeleteFamily}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -638,15 +613,6 @@ export default function SupervisorDashboard({
 
         {activeTab === 'children' && (
           <div className="space-y-6">
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setAddChildDialogOpen(true)}
-                data-testid="button-add-child"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
-              </Button>
-            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{language === 'zh-TW' ? '所有孩子' : 'All Children'}</CardTitle>
@@ -656,9 +622,7 @@ export default function SupervisorDashboard({
                   <ChildrenTable
                     children={childrenTableData}
                     language={language}
-                    onAddRecord={handleAddRecord}
                     onViewHistory={handleViewHistory}
-                    onDelete={handleDeleteChild}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -686,76 +650,19 @@ export default function SupervisorDashboard({
         />
       )}
 
-      {selectedFamily && (
-        <EditFamilyDialog
-          open={editFamilyDialogOpen}
-          onOpenChange={setEditFamilyDialogOpen}
-          language={language}
-          managers={subordinateManagers}
-          familyId={selectedFamily.id}
-          currentFamilyName={selectedFamily.familyName}
-          currentCountry={selectedFamily.country}
-          currentManagerId={selectedFamily.managerId || ''}
-          currentComplianceStatus={selectedFamily.complianceStatus}
-          currentBoneAge={selectedFamily.boneAge}
-          currentManagerNotes={selectedFamily.managerNotes}
-          currentRole="supervisor"
-          onSave={handleSaveFamily}
-        />
-      )}
-
-      {selectedManagerId && (() => {
-        const selectedManager = subordinateManagers.find(m => m.id === selectedManagerId);
-        return selectedManager ? (
-          <EditManagerDialog
-            open={editManagerDialogOpen}
-            onOpenChange={setEditManagerDialogOpen}
-            language={language}
-            currentName={selectedManager.name}
-            currentEmail=""
-            onSave={handleSaveManager}
-          />
-        ) : null;
-      })()}
-
       {selectedChildId && (() => {
         const selectedChild = allChildren.find(c => c.id === selectedChildId);
         return selectedChild ? (
-          <>
-            <GrowthRecordDialog
-              open={growthRecordDialogOpen}
-              onOpenChange={setGrowthRecordDialogOpen}
-              childName={selectedChild.name}
-              language={language}
-              onSave={handleSaveRecord}
-            />
-            <GrowthHistoryDialog
-              open={growthHistoryDialogOpen}
-              onOpenChange={setGrowthHistoryDialogOpen}
-              childName={selectedChild.name}
-              birthday={selectedChild.birthday}
-              records={growthRecords.filter(r => r.childId === selectedChildId)}
-              language={language}
-            />
-          </>
+          <GrowthHistoryDialog
+            open={growthHistoryDialogOpen}
+            onOpenChange={setGrowthHistoryDialogOpen}
+            childName={selectedChild.name}
+            birthday={selectedChild.birthday}
+            records={growthRecords.filter(r => r.childId === selectedChildId)}
+            language={language}
+          />
         ) : null;
       })()}
-
-      <AddFamilyDialog
-        open={addFamilyDialogOpen}
-        onOpenChange={setAddFamilyDialogOpen}
-        language={language}
-        managers={subordinateManagers}
-        onSave={(data) => addFamilyMutation.mutate(data)}
-      />
-
-      <AddChildDialog
-        open={addChildDialogOpen}
-        onOpenChange={setAddChildDialogOpen}
-        language={language}
-        families={subordinateFamilies.map(f => ({ id: f.id, familyName: f.familyName }))}
-        onSave={(data) => addChildMutation.mutate(data)}
-      />
     </div>
   );
 }
