@@ -105,17 +105,13 @@ export default function AddFamilyDialog({
             <Label htmlFor="add-country">
               {language === 'zh-TW' ? '國家' : 'Country'}
             </Label>
-            <Select value={country} onValueChange={setCountry}>
-              <SelectTrigger id="add-country" data-testid="select-add-country">
-                <SelectValue placeholder={language === 'zh-TW' ? '選擇國家' : 'Select country'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="taiwan">{t.taiwan}</SelectItem>
-                <SelectItem value="singapore">{t.singapore}</SelectItem>
-                <SelectItem value="malaysia">{t.malaysia}</SelectItem>
-                <SelectItem value="brunei">{t.brunei}</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="add-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder={language === 'zh-TW' ? '例如：台灣、新加坡、馬來西亞' : 'e.g., Taiwan, Singapore, Malaysia'}
+              data-testid="input-add-country"
+            />
           </div>
 
           <div className="grid gap-2">
