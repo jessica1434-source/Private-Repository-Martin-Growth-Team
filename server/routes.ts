@@ -253,9 +253,11 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Manager not found / 管理員不存在" });
       }
       
-      // Manager role cannot edit anyone
+      // Manager can only edit self
       if (currentManager.role === 'manager') {
-        return res.status(403).json({ message: "Access denied: Managers cannot edit other managers / 無權限：經理無法編輯其他管理員" });
+        if (targetManagerId !== currentManager.id) {
+          return res.status(403).json({ message: "Access denied: Managers can only edit themselves / 無權限：經理只能編輯自己" });
+        }
       }
       
       // Supervisor can only edit direct subordinate managers
