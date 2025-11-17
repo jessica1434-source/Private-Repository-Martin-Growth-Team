@@ -58,7 +58,7 @@ export default function FamilyTable({ families, language, onView, onEdit }: Fami
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="icon"
                     onClick={() => onView?.(family.id)}
                     data-testid={`button-view-${family.id}`}
@@ -66,7 +66,7 @@ export default function FamilyTable({ families, language, onView, onEdit }: Fami
                     <Eye className="h-4 w-4" />
                   </Button>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="icon"
                     onClick={() => onEdit?.(family.id)}
                     data-testid={`button-edit-${family.id}`}

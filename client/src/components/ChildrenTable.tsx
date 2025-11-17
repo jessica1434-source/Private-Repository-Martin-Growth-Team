@@ -75,7 +75,7 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="icon"
                     onClick={() => onViewHistory?.(child.id)}
                     data-testid={`button-history-${child.id}`}
@@ -83,7 +83,7 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
                     <TrendingUp className="h-4 w-4" />
                   </Button>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="icon"
                     onClick={() => onAddRecord?.(child.id)}
                     data-testid={`button-add-record-${child.id}`}

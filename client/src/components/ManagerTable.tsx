@@ -50,7 +50,7 @@ export default function ManagerTable({ managers, language, onEdit, onDelete, hid
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="icon"
                       onClick={() => onEdit?.(manager.id)}
                       data-testid={`button-edit-${manager.id}`}
@@ -58,7 +58,7 @@ export default function ManagerTable({ managers, language, onEdit, onDelete, hid
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
-                      variant="ghost" 
+                      variant="outline" 
                       size="icon"
                       onClick={() => onDelete?.(manager.id)}
                       data-testid={`button-delete-${manager.id}`}
