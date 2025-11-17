@@ -43,6 +43,7 @@ export const families = pgTable("families", {
   managerId: varchar("manager_id").references(() => managers.id),
   complianceStatus: text("compliance_status").notNull().default('green'),
   managerNotes: text("manager_notes"),
+  boneAge: real("bone_age"),
 });
 
 export const children = pgTable("children", {
