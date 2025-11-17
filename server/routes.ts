@@ -595,6 +595,119 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // DELETE endpoints
+  app.delete('/api/managers/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentManager = getCurrentManager(req);
+      
+      if (!currentManager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      // Only boss can delete managers
+      if (currentManager.role !== 'boss') {
+        return res.status(403).json({ message: "Access denied: Only boss can delete managers" });
+      }
+      
+      const managerId = req.params.id;
+      const targetManager = await storage.getManagerById(managerId);
+      
+      if (!targetManager) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Prevent deleting self
+      if (managerId === currentManager.id) {
+        return res.status(400).json({ message: "Cannot delete yourself" });
+      }
+      
+      await storage.deleteManager(managerId);
+      res.json({ success: true, message: "Manager deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting manager:", error);
+      res.status(500).json({ message: "Failed to delete manager" });
+    }
+  });
+
+  app.delete('/api/families/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      const familyId = req.params.id;
+      const family = await storage.getFamily(familyId);
+      
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Only boss and supervisor can delete families
+      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete families" });
+      }
+      
+      // Supervisor can only delete families of subordinate managers
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const canAccess = subordinateManagers.some(m => m.id === family.managerId);
+        if (!canAccess) {
+          return res.status(403).json({ message: "Access denied: Cannot delete this family" });
+        }
+      }
+      
+      await storage.deleteFamily(familyId);
+      res.json({ success: true, message: "Family deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting family:", error);
+      res.status(500).json({ message: "Failed to delete family" });
+    }
+  });
+
+  app.delete('/api/children/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      const childId = req.params.id;
+      const child = await storage.getChild(childId);
+      
+      if (!child) {
+        return res.status(404).json({ message: "Child not found" });
+      }
+      
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Only boss and supervisor can delete children
+      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete children" });
+      }
+      
+      // Supervisor can only delete children of subordinate managers' families
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const canAccess = subordinateManagers.some(m => m.id === family.managerId);
+        if (!canAccess) {
+          return res.status(403).json({ message: "Access denied: Cannot delete this child" });
+        }
+      }
+      
+      await storage.deleteChild(childId);
+      res.json({ success: true, message: "Child deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting child:", error);
+      res.status(500).json({ message: "Failed to delete child" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
