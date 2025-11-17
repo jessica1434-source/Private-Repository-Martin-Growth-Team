@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
 import AddChildDialog from "@/components/AddChildDialog";
+import EditFamilyDialog from "@/components/EditFamilyDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -12,7 +13,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Plus, Pencil } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -37,7 +38,9 @@ export default function ManagerDashboard({
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [addRecordDialogOpen, setAddRecordDialogOpen] = useState(false);
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
+  const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
 
   const { data: currentManager, isLoading: managerLoading } = useQuery<Manager>({
     queryKey: ['/api/managers', managerId],
@@ -124,6 +127,28 @@ export default function ManagerDashboard({
       toast({
         title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
         description: language === 'zh-TW' ? '無法新增孩童' : 'Failed to add child',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateFamilyMutation = useMutation({
+    mutationFn: async (data: { id: string; familyName: string; country: string; boneAge?: number }) => {
+      const { id, ...updateData } = data;
+      return await apiRequest('PATCH', `/api/families/${id}`, updateData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families/manager', managerId] });
+      toast({
+        title: language === 'zh-TW' ? '更新成功' : 'Family Updated',
+        description: language === 'zh-TW' ? '家庭資訊已更新' : 'Family information has been updated successfully',
+      });
+      setEditFamilyDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
+        description: language === 'zh-TW' ? '無法更新家庭資訊' : 'Failed to update family information',
         variant: 'destructive',
       });
     },
@@ -218,19 +243,34 @@ export default function ManagerDashboard({
                     className="p-5 border rounded-lg hover:shadow-md transition-shadow duration-200 bg-card"
                     data-testid={`card-family-status-${family.id}`}
                   >
-                    <h3 className="font-semibold text-lg mb-2">{family.familyName}</h3>
-                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                      <span>{childrenCount} {language === 'zh-TW' ? '位孩子' : 'children'}</span>
-                      <span>•</span>
-                      <span>{family.country === 'taiwan' ? t.taiwan : 
-                             family.country === 'singapore' ? t.singapore :
-                             family.country === 'malaysia' ? t.malaysia : t.brunei}</span>
-                      <span>•</span>
-                      <StatusBadge status={family.complianceStatus as any} language={language} />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">{family.familyName}</h3>
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                          <span>{childrenCount} {language === 'zh-TW' ? '位孩子' : 'children'}</span>
+                          <span>•</span>
+                          <span>{family.country === 'taiwan' ? t.taiwan : 
+                                 family.country === 'singapore' ? t.singapore :
+                                 family.country === 'malaysia' ? t.malaysia : t.brunei}</span>
+                          <span>•</span>
+                          <StatusBadge status={family.complianceStatus as any} language={language} />
+                        </div>
+                        {family.managerNotes && (
+                          <p className="text-sm mt-2 text-muted-foreground">{family.managerNotes}</p>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFamily(family);
+                          setEditFamilyDialogOpen(true);
+                        }}
+                        data-testid={`button-edit-family-${family.id}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
                     </div>
-                    {family.managerNotes && (
-                      <p className="text-sm mt-2 text-muted-foreground">{family.managerNotes}</p>
-                    )}
                   </div>
                 );
               })}
@@ -299,6 +339,31 @@ export default function ManagerDashboard({
         families={myFamilies.map(f => ({ id: f.id, familyName: f.familyName }))}
         onSave={(data) => addChildMutation.mutate(data)}
       />
+
+      {selectedFamily && currentManager && (
+        <EditFamilyDialog
+          open={editFamilyDialogOpen}
+          onOpenChange={setEditFamilyDialogOpen}
+          language={language}
+          managers={[currentManager]}
+          familyId={selectedFamily.id}
+          currentFamilyName={selectedFamily.familyName}
+          currentCountry={selectedFamily.country}
+          currentManagerId={selectedFamily.managerId || managerId}
+          currentComplianceStatus={selectedFamily.complianceStatus}
+          currentBoneAge={selectedFamily.boneAge}
+          currentManagerNotes={selectedFamily.managerNotes}
+          currentRole="manager"
+          onSave={(data) => {
+            updateFamilyMutation.mutate({
+              id: data.familyId,
+              familyName: data.familyName,
+              country: data.country,
+              boneAge: data.boneAge ?? undefined,
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
