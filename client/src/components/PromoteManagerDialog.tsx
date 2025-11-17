@@ -54,12 +54,12 @@ export default function PromoteManagerDialog({
 }: PromoteManagerDialogProps) {
   const t = useTranslation(language);
   const [newRole, setNewRole] = useState(currentRole);
-  const [supervisorId, setSupervisorId] = useState<string>(currentSupervisorId || '');
+  const [supervisorId, setSupervisorId] = useState<string>(currentSupervisorId || 'none');
 
   useEffect(() => {
     if (open) {
       setNewRole(currentRole);
-      setSupervisorId(currentSupervisorId || '');
+      setSupervisorId(currentSupervisorId || 'none');
     }
   }, [open, currentRole, currentSupervisorId]);
 
@@ -68,7 +68,7 @@ export default function PromoteManagerDialog({
       onSave?.({
         managerId,
         newRole,
-        supervisorId: supervisorId || null,
+        supervisorId: supervisorId === 'none' ? null : supervisorId,
       });
       onOpenChange(false);
     }
@@ -146,7 +146,7 @@ export default function PromoteManagerDialog({
                   <SelectValue placeholder={language === 'zh-TW' ? '選擇主任管理師（可選）' : 'Select supervisor (optional)'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">
+                  <SelectItem value="none">
                     {language === 'zh-TW' ? '無' : 'None'}
                   </SelectItem>
                   {availableSupervisors.map(supervisor => (
