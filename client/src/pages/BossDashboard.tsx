@@ -121,9 +121,7 @@ export default function BossDashboard({
     return {
       id: family.id,
       familyName: family.familyName,
-      country: family.country === 'taiwan' ? t.taiwan : 
-               family.country === 'singapore' ? t.singapore :
-               family.country === 'malaysia' ? t.malaysia : t.brunei,
+      country: family.country,
       managerName: manager?.name || '-',
       childrenCount,
       complianceStatus: family.complianceStatus as 'red' | 'yellow' | 'green',

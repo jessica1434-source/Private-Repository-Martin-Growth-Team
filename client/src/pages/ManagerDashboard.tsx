@@ -249,9 +249,7 @@ export default function ManagerDashboard({
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                           <span>{childrenCount} {language === 'zh-TW' ? '位孩子' : 'children'}</span>
                           <span>•</span>
-                          <span>{family.country === 'taiwan' ? t.taiwan : 
-                                 family.country === 'singapore' ? t.singapore :
-                                 family.country === 'malaysia' ? t.malaysia : t.brunei}</span>
+                          <span>{family.country}</span>
                           <span>•</span>
                           <StatusBadge status={family.complianceStatus as any} language={language} />
                         </div>
