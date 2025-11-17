@@ -238,6 +238,39 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/managers/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentManager = getCurrentManager(req);
+      
+      if (!currentManager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      const targetManagerId = req.params.id;
+      const targetManager = await storage.getManagerById(targetManagerId);
+      
+      if (!targetManager) {
+        return res.status(404).json({ message: "Manager not found" });
+      }
+      
+      // Only boss can update manager roles
+      if (currentManager.role !== 'boss') {
+        return res.status(403).json({ message: "Access denied: Only boss can update managers" });
+      }
+      
+      const updateData: Partial<any> = {};
+      if (req.body.name) updateData.name = req.body.name;
+      if (req.body.role) updateData.role = req.body.role;
+      if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
+      
+      const updatedManager = await storage.updateManager(targetManagerId, updateData);
+      res.json(updatedManager);
+    } catch (error) {
+      console.error("Error updating manager:", error);
+      res.status(500).json({ message: "Failed to update manager" });
+    }
+  });
+
   // Family routes
   app.get('/api/families', isAuthenticated, async (req: any, res) => {
     try {
@@ -305,6 +338,49 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching families:", error);
       res.status(500).json({ message: "Failed to fetch families" });
+    }
+  });
+
+  app.patch('/api/families/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      const familyId = req.params.id;
+      const family = await storage.getFamily(familyId);
+      
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Only boss and supervisor can update families
+      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can update families" });
+      }
+      
+      // Supervisor can only update families of subordinate managers
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const canAccess = subordinateManagers.some(m => m.id === family.managerId);
+        if (!canAccess) {
+          return res.status(403).json({ message: "Access denied: Cannot update this family" });
+        }
+      }
+      
+      const updateData = {
+        familyName: req.body.familyName,
+        country: req.body.country,
+        managerId: req.body.managerId,
+      };
+      
+      const updatedFamily = await storage.updateFamily(familyId, updateData);
+      res.json(updatedFamily);
+    } catch (error) {
+      console.error("Error updating family:", error);
+      res.status(500).json({ message: "Failed to update family" });
     }
   });
 
@@ -460,6 +536,62 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching growth records:", error);
       res.status(500).json({ message: "Failed to fetch growth records" });
+    }
+  });
+
+  app.post('/api/growth-records', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      const { childId, recordDate, height, weight, notes } = req.body;
+      
+      if (!childId || !recordDate || !height || !weight) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Check authorization: verify child's family belongs to manager or subordinate
+      const child = await storage.getChild(childId);
+      if (!child) {
+        return res.status(404).json({ message: "Child not found" });
+      }
+      
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Boss can add records for any child
+      if (manager.role !== 'boss') {
+        if (family.managerId !== manager.id) {
+          // Check if family belongs to a subordinate manager
+          if (manager.role === 'supervisor') {
+            const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+            const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
+            if (!isSubordinateFamily) {
+              return res.status(403).json({ message: "Access denied: Cannot add records for this child" });
+            }
+          } else {
+            return res.status(403).json({ message: "Access denied: Cannot add records for this child" });
+          }
+        }
+      }
+      
+      const record = await storage.createGrowthRecord({
+        childId,
+        recordDate,
+        height: parseFloat(height),
+        weight: parseFloat(weight),
+        notes: notes || '',
+      });
+      
+      res.status(201).json(record);
+    } catch (error) {
+      console.error("Error creating growth record:", error);
+      res.status(500).json({ message: "Failed to create growth record" });
     }
   });
 
