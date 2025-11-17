@@ -136,6 +136,7 @@ Preferred communication style: Simple, everyday language.
 - Smooth transitions: All interactive elements use `transition-all duration-200` or `duration-300` for fluid animations
 - Table improvements: Headers use `font-semibold text-xs uppercase tracking-wide` for better hierarchy
 - Status badges: Enhanced with borders and shadow effects for better visibility
+- **Action Buttons**: All table action buttons (view/edit/delete/add) use `variant="outline"` instead of `variant="ghost"` for better visibility across all roles and themes (November 17, 2025)
 
 **Component Patterns**
 - Card-based layouts with hover elevation effects
