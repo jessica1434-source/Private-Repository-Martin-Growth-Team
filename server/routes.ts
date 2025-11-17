@@ -243,20 +243,29 @@ export function registerRoutes(app: Express): Server {
       const currentManager = getCurrentManager(req);
       
       if (!currentManager) {
-        return res.status(403).json({ message: "Access denied: No manager profile found" });
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
       }
       
       const targetManagerId = req.params.id;
       const targetManager = await storage.getManagerById(targetManagerId);
       
       if (!targetManager) {
-        return res.status(404).json({ message: "Manager not found" });
+        return res.status(404).json({ message: "Manager not found / 管理員不存在" });
       }
       
-      // Only boss can update manager roles
-      if (currentManager.role !== 'boss') {
-        return res.status(403).json({ message: "Access denied: Only boss can update managers" });
+      // Manager role cannot edit anyone
+      if (currentManager.role === 'manager') {
+        return res.status(403).json({ message: "Access denied: Managers cannot edit other managers / 無權限：經理無法編輯其他管理員" });
       }
+      
+      // Supervisor can only edit direct subordinate managers
+      if (currentManager.role === 'supervisor') {
+        if (targetManager.supervisorId !== currentManager.id) {
+          return res.status(403).json({ message: "Access denied: Supervisors can only edit their direct subordinates / 無權限：主管只能編輯直屬下屬" });
+        }
+      }
+      
+      // Boss can edit any manager (already validated by role check above)
       
       const updateData: Partial<any> = {};
       if (req.body.name) updateData.name = req.body.name;
@@ -267,7 +276,7 @@ export function registerRoutes(app: Express): Server {
       res.json(updatedManager);
     } catch (error) {
       console.error("Error updating manager:", error);
-      res.status(500).json({ message: "Failed to update manager" });
+      res.status(500).json({ message: "Failed to update manager / 更新管理員失敗" });
     }
   });
 
@@ -700,37 +709,169 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/growth-records/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
+      }
+      
+      const recordId = req.params.id;
+      const record = await storage.getGrowthRecord(recordId);
+      
+      if (!record) {
+        return res.status(404).json({ message: "Growth record not found / 成長記錄不存在" });
+      }
+      
+      // Get child and family to validate ownership
+      const child = await storage.getChild(record.childId);
+      if (!child) {
+        return res.status(404).json({ message: "Child not found / 兒童不存在" });
+      }
+      
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found / 家庭不存在" });
+      }
+      
+      // Boss can update any growth record
+      if (manager.role === 'boss') {
+        const updateData: any = {};
+        if (req.body.recordDate) updateData.recordDate = req.body.recordDate;
+        if (req.body.height !== undefined) updateData.height = parseFloat(req.body.height);
+        if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
+        if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+        
+        const updatedRecord = await storage.updateGrowthRecord(recordId, updateData);
+        return res.json(updatedRecord);
+      }
+      
+      // Supervisor can only update growth records for subordinate managers' children
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
+        if (!isSubordinateFamily) {
+          return res.status(403).json({ message: "Access denied: Can only update growth records for subordinate managers' children / 無權限：只能更新下屬經理的兒童成長記錄" });
+        }
+        
+        const updateData: any = {};
+        if (req.body.recordDate) updateData.recordDate = req.body.recordDate;
+        if (req.body.height !== undefined) updateData.height = parseFloat(req.body.height);
+        if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
+        if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+        
+        const updatedRecord = await storage.updateGrowthRecord(recordId, updateData);
+        return res.json(updatedRecord);
+      }
+      
+      // Manager can only update growth records for own families' children
+      if (family.managerId === manager.id) {
+        const updateData: any = {};
+        if (req.body.recordDate) updateData.recordDate = req.body.recordDate;
+        if (req.body.height !== undefined) updateData.height = parseFloat(req.body.height);
+        if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
+        if (req.body.notes !== undefined) updateData.notes = req.body.notes;
+        
+        const updatedRecord = await storage.updateGrowthRecord(recordId, updateData);
+        return res.json(updatedRecord);
+      }
+      
+      return res.status(403).json({ message: "Access denied: Cannot update this growth record / 無權限：無法更新此成長記錄" });
+    } catch (error) {
+      console.error("Error updating growth record:", error);
+      res.status(500).json({ message: "Failed to update growth record / 更新成長記錄失敗" });
+    }
+  });
+
+  app.delete('/api/growth-records/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
+      }
+      
+      const recordId = req.params.id;
+      const record = await storage.getGrowthRecord(recordId);
+      
+      if (!record) {
+        return res.status(404).json({ message: "Growth record not found / 成長記錄不存在" });
+      }
+      
+      // Get child and family to validate ownership
+      const child = await storage.getChild(record.childId);
+      if (!child) {
+        return res.status(404).json({ message: "Child not found / 兒童不存在" });
+      }
+      
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found / 家庭不存在" });
+      }
+      
+      // Boss can delete any growth record
+      if (manager.role === 'boss') {
+        await storage.deleteGrowthRecord(recordId);
+        return res.json({ success: true, message: "Growth record deleted successfully / 成長記錄已成功刪除" });
+      }
+      
+      // Supervisor can only delete growth records for subordinate managers' children
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
+        if (!isSubordinateFamily) {
+          return res.status(403).json({ message: "Access denied: Can only delete growth records for subordinate managers' children / 無權限：只能刪除下屬經理的兒童成長記錄" });
+        }
+        
+        await storage.deleteGrowthRecord(recordId);
+        return res.json({ success: true, message: "Growth record deleted successfully / 成長記錄已成功刪除" });
+      }
+      
+      // Manager can only delete growth records for own families' children
+      if (family.managerId === manager.id) {
+        await storage.deleteGrowthRecord(recordId);
+        return res.json({ success: true, message: "Growth record deleted successfully / 成長記錄已成功刪除" });
+      }
+      
+      return res.status(403).json({ message: "Access denied: Cannot delete this growth record / 無權限：無法刪除此成長記錄" });
+    } catch (error) {
+      console.error("Error deleting growth record:", error);
+      res.status(500).json({ message: "Failed to delete growth record / 刪除成長記錄失敗" });
+    }
+  });
+
   // DELETE endpoints
   app.delete('/api/managers/:id', isAuthenticated, async (req: any, res) => {
     try {
       const currentManager = getCurrentManager(req);
       
       if (!currentManager) {
-        return res.status(403).json({ message: "Access denied: No manager profile found" });
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
       }
       
       // Only boss can delete managers
       if (currentManager.role !== 'boss') {
-        return res.status(403).json({ message: "Access denied: Only boss can delete managers" });
+        return res.status(403).json({ message: "Access denied: Only boss can delete managers / 無權限：只有老闆可以刪除管理員" });
       }
       
       const managerId = req.params.id;
       const targetManager = await storage.getManagerById(managerId);
       
       if (!targetManager) {
-        return res.status(404).json({ message: "Manager not found" });
+        return res.status(404).json({ message: "Manager not found / 管理員不存在" });
       }
       
       // Prevent deleting self
       if (managerId === currentManager.id) {
-        return res.status(400).json({ message: "Cannot delete yourself" });
+        return res.status(400).json({ message: "Cannot delete yourself / 無法刪除自己" });
       }
       
       await storage.deleteManager(managerId);
-      res.json({ success: true, message: "Manager deleted successfully" });
+      res.json({ success: true, message: "Manager deleted successfully / 管理員已成功刪除" });
     } catch (error) {
       console.error("Error deleting manager:", error);
-      res.status(500).json({ message: "Failed to delete manager" });
+      res.status(500).json({ message: "Failed to delete manager / 刪除管理員失敗" });
     }
   });
 
@@ -739,19 +880,19 @@ export function registerRoutes(app: Express): Server {
       const manager = getCurrentManager(req);
       
       if (!manager) {
-        return res.status(403).json({ message: "Access denied: No manager profile found" });
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
       }
       
       const familyId = req.params.id;
       const family = await storage.getFamily(familyId);
       
       if (!family) {
-        return res.status(404).json({ message: "Family not found" });
+        return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
       // Only boss and supervisor can delete families
       if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete families" });
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete families / 無權限：只有老闆和主管可以刪除家庭" });
       }
       
       // Supervisor can only delete families of subordinate managers
@@ -759,15 +900,15 @@ export function registerRoutes(app: Express): Server {
         const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
         const canAccess = subordinateManagers.some(m => m.id === family.managerId);
         if (!canAccess) {
-          return res.status(403).json({ message: "Access denied: Cannot delete this family" });
+          return res.status(403).json({ message: "Access denied: Cannot delete this family / 無權限：無法刪除此家庭" });
         }
       }
       
       await storage.deleteFamily(familyId);
-      res.json({ success: true, message: "Family deleted successfully" });
+      res.json({ success: true, message: "Family deleted successfully / 家庭已成功刪除" });
     } catch (error) {
       console.error("Error deleting family:", error);
-      res.status(500).json({ message: "Failed to delete family" });
+      res.status(500).json({ message: "Failed to delete family / 刪除家庭失敗" });
     }
   });
 
@@ -776,24 +917,24 @@ export function registerRoutes(app: Express): Server {
       const manager = getCurrentManager(req);
       
       if (!manager) {
-        return res.status(403).json({ message: "Access denied: No manager profile found" });
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
       }
       
       const childId = req.params.id;
       const child = await storage.getChild(childId);
       
       if (!child) {
-        return res.status(404).json({ message: "Child not found" });
+        return res.status(404).json({ message: "Child not found / 兒童不存在" });
       }
       
       const family = await storage.getFamily(child.familyId);
       if (!family) {
-        return res.status(404).json({ message: "Family not found" });
+        return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
       // Only boss and supervisor can delete children
       if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete children" });
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete children / 無權限：只有老闆和主管可以刪除兒童" });
       }
       
       // Supervisor can only delete children of subordinate managers' families
@@ -801,15 +942,15 @@ export function registerRoutes(app: Express): Server {
         const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
         const canAccess = subordinateManagers.some(m => m.id === family.managerId);
         if (!canAccess) {
-          return res.status(403).json({ message: "Access denied: Cannot delete this child" });
+          return res.status(403).json({ message: "Access denied: Cannot delete this child / 無權限：無法刪除此兒童" });
         }
       }
       
       await storage.deleteChild(childId);
-      res.json({ success: true, message: "Child deleted successfully" });
+      res.json({ success: true, message: "Child deleted successfully / 兒童已成功刪除" });
     } catch (error) {
       console.error("Error deleting child:", error);
-      res.status(500).json({ message: "Failed to delete child" });
+      res.status(500).json({ message: "Failed to delete child / 刪除兒童失敗" });
     }
   });
 
