@@ -304,7 +304,6 @@ export default function SupervisorDashboard({
                     language={language}
                     onEdit={() => {}}
                     onDelete={() => {}}
-                    hideActions={true}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
