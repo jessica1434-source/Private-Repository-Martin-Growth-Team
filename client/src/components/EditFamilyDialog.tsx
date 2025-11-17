@@ -34,11 +34,15 @@ interface EditFamilyDialogProps {
   currentFamilyName: string;
   currentCountry: string;
   currentManagerId: string;
+  currentComplianceStatus: string;
+  currentBoneAge?: number | null;
   onSave?: (data: {
     familyId: string;
     familyName: string;
     country: string;
     managerId: string;
+    complianceStatus: string;
+    boneAge?: number | null;
   }) => void;
 }
 
@@ -51,28 +55,36 @@ export default function EditFamilyDialog({
   currentFamilyName,
   currentCountry,
   currentManagerId,
+  currentComplianceStatus,
+  currentBoneAge,
   onSave,
 }: EditFamilyDialogProps) {
   const t = useTranslation(language);
   const [familyName, setFamilyName] = useState(currentFamilyName);
   const [country, setCountry] = useState(currentCountry);
   const [managerId, setManagerId] = useState(currentManagerId);
+  const [complianceStatus, setComplianceStatus] = useState(currentComplianceStatus);
+  const [boneAge, setBoneAge] = useState(currentBoneAge?.toString() || '');
 
   useEffect(() => {
     if (open) {
       setFamilyName(currentFamilyName);
       setCountry(currentCountry);
       setManagerId(currentManagerId);
+      setComplianceStatus(currentComplianceStatus);
+      setBoneAge(currentBoneAge?.toString() || '');
     }
-  }, [open, currentFamilyName, currentCountry, currentManagerId]);
+  }, [open, currentFamilyName, currentCountry, currentManagerId, currentComplianceStatus, currentBoneAge]);
 
   const handleSave = () => {
-    if (familyName && country && managerId) {
+    if (familyName && country && managerId && complianceStatus) {
       onSave?.({
         familyId,
         familyName,
         country,
         managerId,
+        complianceStatus,
+        boneAge: boneAge ? parseFloat(boneAge) : null,
       });
       onOpenChange(false);
     }
@@ -137,6 +149,43 @@ export default function EditFamilyDialog({
               </SelectContent>
             </Select>
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-compliance-status">
+              {language === 'zh-TW' ? '合規狀態' : 'Compliance Status'}
+            </Label>
+            <Select value={complianceStatus} onValueChange={setComplianceStatus}>
+              <SelectTrigger id="edit-compliance-status" data-testid="select-edit-compliance-status">
+                <SelectValue placeholder={language === 'zh-TW' ? '選擇狀態' : 'Select status'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="green">
+                  {language === 'zh-TW' ? '🟢 正常' : '🟢 Normal'}
+                </SelectItem>
+                <SelectItem value="yellow">
+                  {language === 'zh-TW' ? '🟡 注意' : '🟡 Attention'}
+                </SelectItem>
+                <SelectItem value="red">
+                  {language === 'zh-TW' ? '🔴 風險' : '🔴 Risk'}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-bone-age">
+              {language === 'zh-TW' ? '骨齡（歲）' : 'Bone Age (years)'}
+            </Label>
+            <Input
+              id="edit-bone-age"
+              type="number"
+              step="0.1"
+              value={boneAge}
+              onChange={(e) => setBoneAge(e.target.value)}
+              placeholder={language === 'zh-TW' ? '例如：8.5' : 'e.g., 8.5'}
+              data-testid="input-edit-bone-age"
+            />
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
@@ -144,7 +193,7 @@ export default function EditFamilyDialog({
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!familyName || !country || !managerId}
+            disabled={!familyName || !country || !managerId || !complianceStatus}
             data-testid="button-save"
           >
             {t.save}

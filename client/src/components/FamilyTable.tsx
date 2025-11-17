@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import StatusBadge from "./StatusBadge";
-import { Eye, Edit } from "lucide-react";
+import { Eye, Edit, Trash2 } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 
@@ -27,9 +27,10 @@ interface FamilyTableProps {
   language: Language;
   onView?: (familyId: string) => void;
   onEdit?: (familyId: string) => void;
+  onDelete?: (familyId: string) => void;
 }
 
-export default function FamilyTable({ families, language, onView, onEdit }: FamilyTableProps) {
+export default function FamilyTable({ families, language, onView, onEdit, onDelete }: FamilyTableProps) {
   const t = useTranslation(language);
 
   return (
@@ -73,6 +74,16 @@ export default function FamilyTable({ families, language, onView, onEdit }: Fami
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
+                  {onDelete && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onDelete(family.id)}
+                      data-testid={`button-delete-${family.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

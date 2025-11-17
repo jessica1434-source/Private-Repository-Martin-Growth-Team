@@ -74,11 +74,20 @@ export default function SupervisorDashboard({
   const isLoading = supervisorLoading || managersLoading || familiesLoading || childrenLoading || recordsLoading;
 
   const updateFamilyMutation = useMutation({
-    mutationFn: async (data: { familyId: string; familyName: string; country: string; managerId: string }) => {
+    mutationFn: async (data: { 
+      familyId: string; 
+      familyName: string; 
+      country: string; 
+      managerId: string;
+      complianceStatus: string;
+      boneAge?: number | null;
+    }) => {
       return await apiRequest('PATCH', `/api/families/${data.familyId}`, {
         familyName: data.familyName,
         country: data.country,
         managerId: data.managerId,
+        complianceStatus: data.complianceStatus,
+        boneAge: data.boneAge,
       });
     },
     onSuccess: () => {
@@ -93,6 +102,48 @@ export default function SupervisorDashboard({
       toast({
         title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
         description: error.message || (language === 'zh-TW' ? '無法更新家庭資料' : 'Failed to update family information'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteFamilyMutation = useMutation({
+    mutationFn: async (familyId: string) => {
+      return await apiRequest('DELETE', `/api/families/${familyId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Delete Successful',
+        description: language === 'zh-TW' ? '家庭已刪除' : 'Family deleted',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: error.message || (language === 'zh-TW' ? '無法刪除家庭' : 'Failed to delete family'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteChildMutation = useMutation({
+    mutationFn: async (childId: string) => {
+      return await apiRequest('DELETE', `/api/children/${childId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/growth-records'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Delete Successful',
+        description: language === 'zh-TW' ? '孩童已刪除' : 'Child deleted',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: error.message || (language === 'zh-TW' ? '無法刪除孩童' : 'Failed to delete child'),
         variant: 'destructive',
       });
     },
@@ -246,7 +297,36 @@ export default function SupervisorDashboard({
     setGrowthHistoryDialogOpen(true);
   };
 
-  const handleSaveFamily = (data: { familyId: string; familyName: string; country: string; managerId: string }) => {
+  const handleDeleteFamily = (familyId: string) => {
+    const family = allFamilies.find(f => f.id === familyId);
+    const confirmMessage = language === 'zh-TW' 
+      ? `確定要刪除家庭「${family?.familyName}」嗎？這將同時刪除該家庭的所有孩童和成長記錄。`
+      : `Are you sure you want to delete family "${family?.familyName}"? This will also delete all children and growth records in this family.`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteFamilyMutation.mutate(familyId);
+    }
+  };
+
+  const handleDeleteChild = (childId: string) => {
+    const child = allChildren.find(c => c.id === childId);
+    const confirmMessage = language === 'zh-TW' 
+      ? `確定要刪除孩童「${child?.name}」嗎？這將同時刪除該孩童的所有成長記錄。`
+      : `Are you sure you want to delete child "${child?.name}"? This will also delete all growth records for this child.`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteChildMutation.mutate(childId);
+    }
+  };
+
+  const handleSaveFamily = (data: { 
+    familyId: string; 
+    familyName: string; 
+    country: string; 
+    managerId: string;
+    complianceStatus: string;
+    boneAge?: number | null;
+  }) => {
     updateFamilyMutation.mutate(data);
   };
 
@@ -479,6 +559,7 @@ export default function SupervisorDashboard({
                     language={language}
                     onView={handleViewFamily}
                     onEdit={handleEditFamily}
+                    onDelete={handleDeleteFamily}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -503,6 +584,7 @@ export default function SupervisorDashboard({
                     language={language}
                     onAddRecord={handleAddRecord}
                     onViewHistory={handleViewHistory}
+                    onDelete={handleDeleteChild}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -540,6 +622,8 @@ export default function SupervisorDashboard({
           currentFamilyName={selectedFamily.familyName}
           currentCountry={selectedFamily.country}
           currentManagerId={selectedFamily.managerId || ''}
+          currentComplianceStatus={selectedFamily.complianceStatus}
+          currentBoneAge={selectedFamily.boneAge}
           onSave={handleSaveFamily}
         />
       )}

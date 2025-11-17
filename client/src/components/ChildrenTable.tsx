@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, TrendingUp, Trash2 } from "lucide-react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
@@ -27,9 +27,10 @@ interface ChildrenTableProps {
   language: Language;
   onAddRecord?: (childId: string) => void;
   onViewHistory?: (childId: string) => void;
+  onDelete?: (childId: string) => void;
 }
 
-export default function ChildrenTable({ children, language, onAddRecord, onViewHistory }: ChildrenTableProps) {
+export default function ChildrenTable({ children, language, onAddRecord, onViewHistory, onDelete }: ChildrenTableProps) {
   const t = useTranslation(language);
 
   const calculateAge = (birthday: string) => {
@@ -90,6 +91,16 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
+                  {onDelete && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onDelete(child.id)}
+                      data-testid={`button-delete-${child.id}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

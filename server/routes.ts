@@ -341,6 +341,54 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.post('/api/families', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      // Only boss and supervisor can create families
+      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can create families" });
+      }
+      
+      const { familyName, country, managerId, complianceStatus = 'green', boneAge } = req.body;
+      
+      // Validate required fields
+      if (!familyName || !country || !managerId) {
+        return res.status(400).json({ message: "Missing required fields: familyName, country, managerId" });
+      }
+      
+      // Supervisor can only assign families to subordinate managers
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const isSubordinate = subordinateManagers.some(m => m.id === managerId);
+        if (!isSubordinate) {
+          return res.status(403).json({ message: "Access denied: Can only assign families to subordinate managers" });
+        }
+      }
+      
+      const familyData: any = {
+        familyName,
+        country,
+        managerId,
+        complianceStatus,
+      };
+      
+      if (boneAge !== undefined && boneAge !== null) {
+        familyData.boneAge = parseFloat(boneAge);
+      }
+      
+      const family = await storage.createFamily(familyData);
+      res.status(201).json(family);
+    } catch (error) {
+      console.error("Error creating family:", error);
+      res.status(500).json({ message: "Failed to create family" });
+    }
+  });
+
   app.patch('/api/families/:id', isAuthenticated, async (req: any, res) => {
     try {
       const manager = getCurrentManager(req);
@@ -370,11 +418,19 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      const updateData = {
+      const updateData: any = {
         familyName: req.body.familyName,
         country: req.body.country,
         managerId: req.body.managerId,
       };
+      
+      if (req.body.complianceStatus !== undefined) {
+        updateData.complianceStatus = req.body.complianceStatus;
+      }
+      
+      if (req.body.boneAge !== undefined) {
+        updateData.boneAge = req.body.boneAge;
+      }
       
       const updatedFamily = await storage.updateFamily(familyId, updateData);
       res.json(updatedFamily);
@@ -456,6 +512,55 @@ export function registerRoutes(app: Express): Server {
     } catch (error) {
       console.error("Error fetching children:", error);
       res.status(500).json({ message: "Failed to fetch children" });
+    }
+  });
+
+  app.post('/api/children', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      // Only boss and supervisor can create children
+      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Only boss and supervisor can create children" });
+      }
+      
+      const { name, birthday, familyId } = req.body;
+      
+      // Validate required fields
+      if (!name || !birthday || !familyId) {
+        return res.status(400).json({ message: "Missing required fields: name, birthday, familyId" });
+      }
+      
+      // Check if family exists
+      const family = await storage.getFamily(familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Supervisor can only create children for families of subordinate managers
+      if (manager.role === 'supervisor') {
+        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+        const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
+        if (!isSubordinateFamily) {
+          return res.status(403).json({ message: "Access denied: Can only create children for families of subordinate managers" });
+        }
+      }
+      
+      const childData = {
+        name,
+        birthday,
+        familyId,
+      };
+      
+      const child = await storage.createChild(childData);
+      res.status(201).json(child);
+    } catch (error) {
+      console.error("Error creating child:", error);
+      res.status(500).json({ message: "Failed to create child" });
     }
   });
 

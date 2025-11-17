@@ -19,6 +19,12 @@ import {
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 
+interface Manager {
+  id: string;
+  name: string;
+  role: string;
+}
+
 interface PromoteManagerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,9 +32,12 @@ interface PromoteManagerDialogProps {
   managerId: string;
   currentName: string;
   currentRole: string;
+  currentSupervisorId?: string | null;
+  managers?: Manager[];
   onSave?: (data: {
     managerId: string;
     newRole: string;
+    supervisorId?: string | null;
   }) => void;
 }
 
@@ -39,26 +48,37 @@ export default function PromoteManagerDialog({
   managerId,
   currentName,
   currentRole,
+  currentSupervisorId,
+  managers = [],
   onSave,
 }: PromoteManagerDialogProps) {
   const t = useTranslation(language);
   const [newRole, setNewRole] = useState(currentRole);
+  const [supervisorId, setSupervisorId] = useState<string>(currentSupervisorId || '');
 
   useEffect(() => {
     if (open) {
       setNewRole(currentRole);
+      setSupervisorId(currentSupervisorId || '');
     }
-  }, [open, currentRole]);
+  }, [open, currentRole, currentSupervisorId]);
 
   const handleSave = () => {
-    if (newRole && newRole !== currentRole) {
+    if (newRole) {
       onSave?.({
         managerId,
         newRole,
+        supervisorId: supervisorId || null,
       });
       onOpenChange(false);
     }
   };
+
+  const availableSupervisors = managers.filter(m => 
+    m.role === 'supervisor' && m.id !== managerId
+  );
+
+  const showSupervisorSelect = newRole === 'manager' || newRole === 'supervisor';
 
   const roleLabel = (role: string) => {
     switch (role) {
@@ -115,6 +135,29 @@ export default function PromoteManagerDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {showSupervisorSelect && (
+            <div className="grid gap-2">
+              <Label htmlFor="supervisor">
+                {language === 'zh-TW' ? '指派主任管理師' : 'Assign Supervisor'}
+              </Label>
+              <Select value={supervisorId} onValueChange={setSupervisorId}>
+                <SelectTrigger id="supervisor" data-testid="select-supervisor">
+                  <SelectValue placeholder={language === 'zh-TW' ? '選擇主任管理師（可選）' : 'Select supervisor (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">
+                    {language === 'zh-TW' ? '無' : 'None'}
+                  </SelectItem>
+                  {availableSupervisors.map(supervisor => (
+                    <SelectItem key={supervisor.id} value={supervisor.id}>
+                      {supervisor.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
@@ -122,7 +165,7 @@ export default function PromoteManagerDialog({
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!newRole || newRole === currentRole}
+            disabled={!newRole}
             data-testid="button-save"
           >
             {t.save}

@@ -146,11 +146,20 @@ export default function BossDashboard({
   });
 
   const updateFamilyMutation = useMutation({
-    mutationFn: async (data: { familyId: string; familyName: string; country: string; managerId: string }) => {
+    mutationFn: async (data: { 
+      familyId: string; 
+      familyName: string; 
+      country: string; 
+      managerId: string;
+      complianceStatus: string;
+      boneAge?: number | null;
+    }) => {
       await apiRequest('PATCH', `/api/families/${data.familyId}`, {
         familyName: data.familyName,
         country: data.country,
         managerId: data.managerId,
+        complianceStatus: data.complianceStatus,
+        boneAge: data.boneAge,
       });
     },
     onSuccess: () => {
@@ -170,10 +179,53 @@ export default function BossDashboard({
     },
   });
 
+  const deleteFamilyMutation = useMutation({
+    mutationFn: async (familyId: string) => {
+      await apiRequest('DELETE', `/api/families/${familyId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Delete Successful',
+        description: language === 'zh-TW' ? '家庭已刪除' : 'Family deleted',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteChildMutation = useMutation({
+    mutationFn: async (childId: string) => {
+      await apiRequest('DELETE', `/api/children/${childId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/growth-records'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Delete Successful',
+        description: language === 'zh-TW' ? '孩童已刪除' : 'Child deleted',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const updateManagerMutation = useMutation({
-    mutationFn: async (data: { managerId: string; newRole: string }) => {
+    mutationFn: async (data: { managerId: string; newRole: string; supervisorId?: string | null }) => {
       await apiRequest('PATCH', `/api/managers/${data.managerId}`, {
         role: data.newRole,
+        supervisorId: data.supervisorId,
       });
     },
     onSuccess: () => {
@@ -241,6 +293,28 @@ export default function BossDashboard({
   const handleViewHistory = (childId: string) => {
     setSelectedChildId(childId);
     setHistoryDialogOpen(true);
+  };
+
+  const handleDeleteFamily = (familyId: string) => {
+    const family = families.find(f => f.id === familyId);
+    const confirmMessage = language === 'zh-TW' 
+      ? `確定要刪除家庭「${family?.familyName}」嗎？這將同時刪除該家庭的所有孩童和成長記錄。`
+      : `Are you sure you want to delete family "${family?.familyName}"? This will also delete all children and growth records in this family.`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteFamilyMutation.mutate(familyId);
+    }
+  };
+
+  const handleDeleteChild = (childId: string) => {
+    const child = children.find(c => c.id === childId);
+    const confirmMessage = language === 'zh-TW' 
+      ? `確定要刪除孩童「${child?.name}」嗎？這將同時刪除該孩童的所有成長記錄。`
+      : `Are you sure you want to delete child "${child?.name}"? This will also delete all growth records for this child.`;
+    
+    if (window.confirm(confirmMessage)) {
+      deleteChildMutation.mutate(childId);
+    }
   };
 
   const childrenTableData = children.map(child => {
@@ -470,6 +544,7 @@ export default function BossDashboard({
                   language={language}
                   onView={handleViewFamily}
                   onEdit={handleEditFamily}
+                  onDelete={handleDeleteFamily}
                 />
               </CardContent>
             </Card>
@@ -488,6 +563,7 @@ export default function BossDashboard({
                   language={language}
                   onAddRecord={handleAddRecord}
                   onViewHistory={handleViewHistory}
+                  onDelete={handleDeleteChild}
                 />
               </CardContent>
             </Card>
@@ -520,6 +596,8 @@ export default function BossDashboard({
           currentFamilyName={selectedFamily.familyName}
           currentCountry={selectedFamily.country}
           currentManagerId={selectedFamily.managerId || ''}
+          currentComplianceStatus={selectedFamily.complianceStatus}
+          currentBoneAge={selectedFamily.boneAge}
           onSave={(data) => updateFamilyMutation.mutate(data)}
         />
       )}
@@ -532,6 +610,8 @@ export default function BossDashboard({
           managerId={selectedManager.id}
           currentName={selectedManager.name}
           currentRole={selectedManager.role}
+          currentSupervisorId={selectedManager.supervisorId}
+          managers={managers}
           onSave={(data) => updateManagerMutation.mutate(data)}
         />
       )}
