@@ -433,7 +433,10 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Authorization checks based on role
-      if (manager.role === 'manager') {
+      if (manager.role === 'supervisor') {
+        // Supervisor is view-only, cannot edit families
+        return res.status(403).json({ message: "Access denied: Supervisors have read-only access" });
+      } else if (manager.role === 'manager') {
         // Manager can only update their own families
         if (family.managerId !== manager.id) {
           return res.status(403).json({ message: "Access denied: Can only update your own families" });
@@ -443,23 +446,6 @@ export function registerRoutes(app: Express): Server {
         if (req.body.managerId !== undefined && req.body.managerId !== manager.id) {
           return res.status(403).json({ message: "Access denied: Cannot modify family assignment" });
         }
-      } else if (manager.role === 'supervisor') {
-        // Supervisor can only update families of subordinate managers
-        const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
-        
-        // Check current family ownership
-        const canAccessCurrent = subordinateManagers.some(m => m.id === family.managerId);
-        if (!canAccessCurrent) {
-          return res.status(403).json({ message: "Access denied: Cannot update this family" });
-        }
-        
-        // If changing managerId, verify new manager is also a subordinate
-        if (req.body.managerId && req.body.managerId !== family.managerId) {
-          const canAccessNew = subordinateManagers.some(m => m.id === req.body.managerId);
-          if (!canAccessNew) {
-            return res.status(403).json({ message: "Access denied: Cannot reassign family to a manager outside your hierarchy" });
-          }
-        }
       }
       // Boss can update any family without restrictions
       
@@ -468,23 +454,21 @@ export function registerRoutes(app: Express): Server {
         country: req.body.country,
       };
       
-      // Only Boss and Supervisor can update managerId
-      if (manager.role === 'boss' || manager.role === 'supervisor') {
+      // Only Boss can update managerId
+      if (manager.role === 'boss') {
         updateData.managerId = req.body.managerId;
       } else {
         // Manager: always keep original managerId
         updateData.managerId = family.managerId;
       }
       
-      // Only Boss and Supervisor can update complianceStatus and managerNotes
-      if (manager.role === 'boss' || manager.role === 'supervisor') {
-        if (req.body.complianceStatus !== undefined) {
-          updateData.complianceStatus = req.body.complianceStatus;
-        }
-        
-        if (req.body.managerNotes !== undefined) {
-          updateData.managerNotes = req.body.managerNotes;
-        }
+      // Manager and Boss can update complianceStatus and managerNotes
+      if (req.body.complianceStatus !== undefined) {
+        updateData.complianceStatus = req.body.complianceStatus;
+      }
+      
+      if (req.body.managerNotes !== undefined) {
+        updateData.managerNotes = req.body.managerNotes;
       }
       
       if (req.body.boneAge !== undefined) {
