@@ -18,13 +18,18 @@ The system emphasizes data visualization, compliance monitoring, and hierarchica
 
 **Family Management Permissions**
 - **Manager Restrictions**: Managers can no longer edit complianceStatus (red/yellow/green) or managerNotes (execution notes)
+- **Manager Edit Capability**: Added EditFamilyDialog to ManagerDashboard - managers can edit basic family info (familyName, country, boneAge)
 - **Supervisor/Boss Only**: Only Boss and Supervisor roles can modify compliance status and execution notes via EditFamilyDialog
 - **EditFamilyDialog Enhancement**: Added managerNotes (execution notes) field for Boss/Supervisor roles
 
 **Authorization & Security**
-- Role-based field visibility in EditFamilyDialog (Manager sees basic fields only)
+- **Frontend**: Role-based field visibility in EditFamilyDialog (Manager sees only familyName, country, boneAge fields)
+- **Backend**: PATCH /api/families/:id enforces role-scoped updates:
+  - Manager can only update own families and cannot modify complianceStatus, managerNotes, or reassign families
+  - Manager's managerId is always preserved (prevents unauthorized reassignment)
+  - Supervisor/Boss can update all fields including restricted ones
+- **Testing**: E2E tests confirm Manager cannot bypass restrictions via API or UI
 - Database mutations properly handle optional complianceStatus and managerNotes fields
-- Maintained authorization checks across all dashboards
 
 ## User Preferences
 
