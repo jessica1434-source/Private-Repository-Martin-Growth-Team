@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,9 +11,16 @@ import TrendChart from "@/components/TrendChart";
 import BirthdayCard from "@/components/BirthdayCard";
 import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
+import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
+import EditFamilyDialog from "@/components/EditFamilyDialog";
+import PromoteManagerDialog from "@/components/PromoteManagerDialog";
+import GrowthRecordDialog from "@/components/GrowthRecordDialog";
+import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -32,9 +39,16 @@ export default function BossDashboard({
   onLogout
 }: BossDashboardProps) {
   const t = useTranslation(language);
-  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families'>('overview');
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
+  const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
+  const [promoteManagerDialogOpen, setPromoteManagerDialogOpen] = useState(false);
+  const [growthRecordDialogOpen, setGrowthRecordDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+  const [selectedChildId, setSelectedChildId] = useState<string>('');
 
   const { data: managers = [], isLoading: managersLoading } = useQuery<Manager[]>({
     queryKey: ['/api/managers'],
@@ -131,10 +145,120 @@ export default function BossDashboard({
     };
   });
 
+  const updateFamilyMutation = useMutation({
+    mutationFn: async (data: { familyId: string; familyName: string; country: string; managerId: string }) => {
+      await apiRequest('PATCH', `/api/families/${data.familyId}`, {
+        familyName: data.familyName,
+        country: data.country,
+        managerId: data.managerId,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/families/manager'] });
+      toast({
+        title: language === 'zh-TW' ? '更新成功' : 'Update Successful',
+        description: language === 'zh-TW' ? '家庭資料已更新' : 'Family information updated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateManagerMutation = useMutation({
+    mutationFn: async (data: { managerId: string; newRole: string }) => {
+      await apiRequest('PATCH', `/api/managers/${data.managerId}`, {
+        role: data.newRole,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
+      toast({
+        title: language === 'zh-TW' ? '更新成功' : 'Update Successful',
+        description: language === 'zh-TW' ? '管理師角色已更新' : 'Manager role updated',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const addRecordMutation = useMutation({
+    mutationFn: async (data: { childId: string; date: string; height: number; weight: number; notes: string }) => {
+      await apiRequest('POST', '/api/growth-records', {
+        childId: data.childId,
+        recordDate: data.date,
+        height: data.height,
+        weight: data.weight,
+        notes: data.notes,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/growth-records'] });
+      toast({
+        title: language === 'zh-TW' ? '新增成功' : 'Record Added',
+        description: language === 'zh-TW' ? '成長紀錄已新增' : 'Growth record added successfully',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleViewFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setViewFamilyDetailOpen(true);
   };
+
+  const handleEditFamily = (familyId: string) => {
+    setSelectedFamilyId(familyId);
+    setEditFamilyDialogOpen(true);
+  };
+
+  const handleEditManager = (managerId: string) => {
+    setSelectedManagerId(managerId);
+    setPromoteManagerDialogOpen(true);
+  };
+
+  const handleAddRecord = (childId: string) => {
+    setSelectedChildId(childId);
+    setGrowthRecordDialogOpen(true);
+  };
+
+  const handleViewHistory = (childId: string) => {
+    setSelectedChildId(childId);
+    setHistoryDialogOpen(true);
+  };
+
+  const childrenTableData = children.map(child => {
+    const family = families.find(f => f.id === child.familyId);
+    const latestRecord = growthRecords
+      .filter(r => r.childId === child.id)
+      .sort((a, b) => new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime())[0];
+
+    return {
+      id: child.id,
+      name: child.name,
+      birthday: child.birthday,
+      familyName: family?.familyName || '-',
+      lastHeight: latestRecord?.height,
+      lastWeight: latestRecord?.weight,
+      lastRecordDate: latestRecord?.recordDate,
+    };
+  });
 
   const selectedFamily = families.find(f => f.id === selectedFamilyId);
   const selectedFamilyChildren = children.filter(c => c.familyId === selectedFamilyId);
@@ -143,6 +267,10 @@ export default function BossDashboard({
     return acc;
   }, {} as { [childId: string]: typeof growthRecords });
   const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
+
+  const selectedManager = managers.find(m => m.id === selectedManagerId);
+  const selectedChild = children.find(c => c.id === selectedChildId);
+  const selectedChildRecords = growthRecords.filter(r => r.childId === selectedChildId);
 
   if (isLoading) {
     return (
@@ -238,6 +366,13 @@ export default function BossDashboard({
           >
             {t.families}
           </Button>
+          <Button 
+            variant={activeTab === 'children' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('children')}
+            data-testid="button-tab-children"
+          >
+            {language === 'zh-TW' ? '孩童管理' : 'Children'}
+          </Button>
         </div>
 
         {activeTab === 'overview' && (
@@ -316,6 +451,7 @@ export default function BossDashboard({
                 <ManagerTable
                   managers={managerTableData}
                   language={language}
+                  onEdit={handleEditManager}
                 />
               </CardContent>
             </Card>
@@ -333,6 +469,25 @@ export default function BossDashboard({
                   families={familyTableData}
                   language={language}
                   onView={handleViewFamily}
+                  onEdit={handleEditFamily}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'children' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>{language === 'zh-TW' ? '孩童名單' : 'Children List'}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChildrenTable
+                  children={childrenTableData}
+                  language={language}
+                  onAddRecord={handleAddRecord}
+                  onViewHistory={handleViewHistory}
                 />
               </CardContent>
             </Card>
@@ -351,6 +506,53 @@ export default function BossDashboard({
           managerNotes={selectedFamily.managerNotes || ''}
           children={selectedFamilyChildren}
           childrenRecords={selectedFamilyRecords}
+          language={language}
+        />
+      )}
+
+      {selectedFamily && (
+        <EditFamilyDialog
+          open={editFamilyDialogOpen}
+          onOpenChange={setEditFamilyDialogOpen}
+          language={language}
+          managers={managers}
+          familyId={selectedFamily.id}
+          currentFamilyName={selectedFamily.familyName}
+          currentCountry={selectedFamily.country}
+          currentManagerId={selectedFamily.managerId || ''}
+          onSave={(data) => updateFamilyMutation.mutate(data)}
+        />
+      )}
+
+      {selectedManager && (
+        <PromoteManagerDialog
+          open={promoteManagerDialogOpen}
+          onOpenChange={setPromoteManagerDialogOpen}
+          language={language}
+          managerId={selectedManager.id}
+          currentName={selectedManager.name}
+          currentRole={selectedManager.role}
+          onSave={(data) => updateManagerMutation.mutate(data)}
+        />
+      )}
+
+      {selectedChild && (
+        <GrowthRecordDialog
+          open={growthRecordDialogOpen}
+          onOpenChange={setGrowthRecordDialogOpen}
+          childName={selectedChild.name}
+          language={language}
+          onSave={(data) => addRecordMutation.mutate({ childId: selectedChild.id, ...data })}
+        />
+      )}
+
+      {selectedChild && (
+        <GrowthHistoryDialog
+          open={historyDialogOpen}
+          onOpenChange={setHistoryDialogOpen}
+          childName={selectedChild.name}
+          birthday={selectedChild.birthday}
+          records={selectedChildRecords}
           language={language}
         />
       )}

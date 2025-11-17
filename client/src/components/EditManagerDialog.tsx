@@ -18,8 +18,8 @@ interface EditManagerDialogProps {
   onOpenChange: (open: boolean) => void;
   language: Language;
   currentName: string;
-  currentEmail: string;
-  onSave?: (data: { name: string; email: string }) => void;
+  currentEmail?: string;
+  onSave?: (data: { name: string }) => void;
 }
 
 export default function EditManagerDialog({
@@ -27,23 +27,21 @@ export default function EditManagerDialog({
   onOpenChange,
   language,
   currentName,
-  currentEmail,
+  currentEmail = '',
   onSave,
 }: EditManagerDialogProps) {
   const t = useTranslation(language);
   const [name, setName] = useState(currentName);
-  const [email, setEmail] = useState(currentEmail);
 
   useEffect(() => {
     if (open) {
       setName(currentName);
-      setEmail(currentEmail);
     }
-  }, [open, currentName, currentEmail]);
+  }, [open, currentName]);
 
   const handleSave = () => {
-    if (name && email) {
-      onSave?.({ name, email });
+    if (name) {
+      onSave?.({ name });
       onOpenChange(false);
     }
   };
@@ -72,25 +70,12 @@ export default function EditManagerDialog({
               data-testid="input-edit-manager-name"
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edit-manager-email">
-              {language === 'zh-TW' ? '電子郵件' : 'Email'}
-            </Label>
-            <Input
-              id="edit-manager-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder={language === 'zh-TW' ? '輸入電子郵件地址' : 'Enter email address'}
-              data-testid="input-edit-manager-email"
-            />
-          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
             {t.cancel}
           </Button>
-          <Button onClick={handleSave} disabled={!name || !email} data-testid="button-save">
+          <Button onClick={handleSave} disabled={!name} data-testid="button-save">
             {t.save}
           </Button>
         </DialogFooter>
