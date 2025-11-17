@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
+import { Baby, Users, AlertTriangle, CheckCircle, LogOut, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -13,6 +13,8 @@ import ManagerTable from "@/components/ManagerTable";
 import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import EditFamilyDialog from "@/components/EditFamilyDialog";
+import AddFamilyDialog from "@/components/AddFamilyDialog";
+import AddChildDialog from "@/components/AddChildDialog";
 import EditManagerDialog from "@/components/EditManagerDialog";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
@@ -44,6 +46,8 @@ export default function SupervisorDashboard({
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
+  const [addFamilyDialogOpen, setAddFamilyDialogOpen] = useState(false);
+  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [editManagerDialogOpen, setEditManagerDialogOpen] = useState(false);
   const [growthRecordDialogOpen, setGrowthRecordDialogOpen] = useState(false);
   const [growthHistoryDialogOpen, setGrowthHistoryDialogOpen] = useState(false);
@@ -192,6 +196,47 @@ export default function SupervisorDashboard({
       toast({
         title: language === 'zh-TW' ? '新增失敗' : 'Addition Failed',
         description: error.message || (language === 'zh-TW' ? '無法新增成長記錄' : 'Failed to add growth record'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const addFamilyMutation = useMutation({
+    mutationFn: async (data: { familyName: string; country: string; managerId: string; complianceStatus: string; boneAge?: number | null }) => {
+      return await apiRequest('POST', '/api/families', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/families/manager'] });
+      toast({
+        title: language === 'zh-TW' ? '新增成功' : 'Family Added',
+        description: language === 'zh-TW' ? '家庭已新增' : 'Family has been added successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
+        description: error.message || (language === 'zh-TW' ? '無法新增家庭' : 'Failed to add family'),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const addChildMutation = useMutation({
+    mutationFn: async (data: { name: string; birthday: string; familyId: string }) => {
+      return await apiRequest('POST', '/api/children', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '新增成功' : 'Child Added',
+        description: language === 'zh-TW' ? '孩童已新增' : 'Child has been added successfully',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
+        description: error.message || (language === 'zh-TW' ? '無法新增孩童' : 'Failed to add child'),
         variant: 'destructive',
       });
     },
@@ -548,6 +593,15 @@ export default function SupervisorDashboard({
 
         {activeTab === 'families' && (
           <div className="space-y-6">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setAddFamilyDialogOpen(true)}
+                data-testid="button-add-family"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'zh-TW' ? '新增家庭' : 'Add Family'}
+              </Button>
+            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{t.families}</CardTitle>
@@ -573,6 +627,15 @@ export default function SupervisorDashboard({
 
         {activeTab === 'children' && (
           <div className="space-y-6">
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setAddChildDialogOpen(true)}
+                data-testid="button-add-child"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
+              </Button>
+            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{language === 'zh-TW' ? '所有孩子' : 'All Children'}</CardTitle>
@@ -664,6 +727,22 @@ export default function SupervisorDashboard({
           </>
         ) : null;
       })()}
+
+      <AddFamilyDialog
+        open={addFamilyDialogOpen}
+        onOpenChange={setAddFamilyDialogOpen}
+        language={language}
+        managers={subordinateManagers}
+        onSave={(data) => addFamilyMutation.mutate(data)}
+      />
+
+      <AddChildDialog
+        open={addChildDialogOpen}
+        onOpenChange={setAddChildDialogOpen}
+        language={language}
+        families={subordinateFamilies.map(f => ({ id: f.id, familyName: f.familyName }))}
+        onSave={(data) => addChildMutation.mutate(data)}
+      />
     </div>
   );
 }

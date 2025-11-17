@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
+import AddChildDialog from "@/components/AddChildDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -11,7 +12,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { LogOut } from "lucide-react";
+import { LogOut, Plus } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -35,6 +36,7 @@ export default function ManagerDashboard({
   const { toast } = useToast();
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [addRecordDialogOpen, setAddRecordDialogOpen] = useState(false);
+  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
 
   const { data: currentManager, isLoading: managerLoading } = useQuery<Manager>({
@@ -102,6 +104,26 @@ export default function ManagerDashboard({
       toast({
         title: language === 'zh-TW' ? '新增失敗' : 'Failed to add',
         description: language === 'zh-TW' ? '無法新增成長記錄' : 'Failed to add growth record',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const addChildMutation = useMutation({
+    mutationFn: async (data: { name: string; birthday: string; familyId: string }) => {
+      return await apiRequest('POST', '/api/children', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '新增成功' : 'Child Added',
+        description: language === 'zh-TW' ? '孩童已新增' : 'Child has been added successfully',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
+        description: language === 'zh-TW' ? '無法新增孩童' : 'Failed to add child',
         variant: 'destructive',
       });
     },
@@ -216,19 +238,30 @@ export default function ManagerDashboard({
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl">{t.records}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChildrenTable
-              children={childrenTableData}
-              language={language}
-              onViewHistory={handleViewHistory}
-              onAddRecord={handleAddRecord}
-            />
-          </CardContent>
-        </Card>
+        <div className="space-y-6">
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => setAddChildDialogOpen(true)}
+              data-testid="button-add-child"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
+            </Button>
+          </div>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl">{t.records}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChildrenTable
+                children={childrenTableData}
+                language={language}
+                onViewHistory={handleViewHistory}
+                onAddRecord={handleAddRecord}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </main>
 
       {selectedChildData && (
@@ -258,6 +291,14 @@ export default function ManagerDashboard({
           />
         </>
       )}
+
+      <AddChildDialog
+        open={addChildDialogOpen}
+        onOpenChange={setAddChildDialogOpen}
+        language={language}
+        families={myFamilies.map(f => ({ id: f.id, familyName: f.familyName }))}
+        onSave={(data) => addChildMutation.mutate(data)}
+      />
     </div>
   );
 }
