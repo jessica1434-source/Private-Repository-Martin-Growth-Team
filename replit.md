@@ -9,6 +9,23 @@ A bilingual (Traditional Chinese/English) dashboard system for tracking and mana
 
 The system emphasizes data visualization, compliance monitoring, and hierarchical family management with appropriate permissions for each role level.
 
+## Recent Changes (November 17, 2025)
+
+**Dashboard Role Separation**
+- **Boss Dashboard**: Removed family and child creation capabilities - managers now handle their own data entry
+- **Boss Dashboard**: Focus shifted to oversight with growth results visualization and manager supervision
+- **Supervisor Assignment**: Boss can assign supervisors to managers via PromoteManagerDialog
+
+**Family Management Permissions**
+- **Manager Restrictions**: Managers can no longer edit complianceStatus (red/yellow/green) or managerNotes (execution notes)
+- **Supervisor/Boss Only**: Only Boss and Supervisor roles can modify compliance status and execution notes via EditFamilyDialog
+- **EditFamilyDialog Enhancement**: Added managerNotes (execution notes) field for Boss/Supervisor roles
+
+**Authorization & Security**
+- Role-based field visibility in EditFamilyDialog (Manager sees basic fields only)
+- Database mutations properly handle optional complianceStatus and managerNotes fields
+- Maintained authorization checks across all dashboards
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.

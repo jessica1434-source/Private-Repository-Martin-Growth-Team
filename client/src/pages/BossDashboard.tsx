@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Baby, Users, AlertTriangle, CheckCircle, LogOut, Plus } from "lucide-react";
+import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,8 +14,6 @@ import ManagerTable from "@/components/ManagerTable";
 import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import EditFamilyDialog from "@/components/EditFamilyDialog";
-import AddFamilyDialog from "@/components/AddFamilyDialog";
-import AddChildDialog from "@/components/AddChildDialog";
 import PromoteManagerDialog from "@/components/PromoteManagerDialog";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
@@ -45,8 +43,6 @@ export default function BossDashboard({
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
-  const [addFamilyDialogOpen, setAddFamilyDialogOpen] = useState(false);
-  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [promoteManagerDialogOpen, setPromoteManagerDialogOpen] = useState(false);
   const [growthRecordDialogOpen, setGrowthRecordDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -155,16 +151,26 @@ export default function BossDashboard({
       familyName: string; 
       country: string; 
       managerId: string;
-      complianceStatus: string;
+      complianceStatus?: string;
       boneAge?: number | null;
+      managerNotes?: string | null;
     }) => {
-      await apiRequest('PATCH', `/api/families/${data.familyId}`, {
+      const payload: any = {
         familyName: data.familyName,
         country: data.country,
         managerId: data.managerId,
-        complianceStatus: data.complianceStatus,
         boneAge: data.boneAge,
-      });
+      };
+      
+      if (data.complianceStatus !== undefined) {
+        payload.complianceStatus = data.complianceStatus;
+      }
+      
+      if (data.managerNotes !== undefined) {
+        payload.managerNotes = data.managerNotes;
+      }
+      
+      await apiRequest('PATCH', `/api/families/${data.familyId}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/families'] });
@@ -263,47 +269,6 @@ export default function BossDashboard({
       toast({
         title: language === 'zh-TW' ? '新增成功' : 'Record Added',
         description: language === 'zh-TW' ? '成長紀錄已新增' : 'Growth record added successfully',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const addFamilyMutation = useMutation({
-    mutationFn: async (data: { familyName: string; country: string; managerId: string; complianceStatus: string; boneAge?: number | null }) => {
-      await apiRequest('POST', '/api/families', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/families/manager'] });
-      toast({
-        title: language === 'zh-TW' ? '新增成功' : 'Family Added',
-        description: language === 'zh-TW' ? '家庭已新增' : 'Family has been added successfully',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const addChildMutation = useMutation({
-    mutationFn: async (data: { name: string; birthday: string; familyId: string }) => {
-      await apiRequest('POST', '/api/children', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
-      toast({
-        title: language === 'zh-TW' ? '新增成功' : 'Child Added',
-        description: language === 'zh-TW' ? '孩童已新增' : 'Child has been added successfully',
       });
     },
     onError: (error: Error) => {
@@ -579,15 +544,6 @@ export default function BossDashboard({
 
         {activeTab === 'families' && (
           <div className="space-y-6">
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setAddFamilyDialogOpen(true)}
-                data-testid="button-add-family"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'zh-TW' ? '新增家庭' : 'Add Family'}
-              </Button>
-            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{t.families}</CardTitle>
@@ -607,15 +563,6 @@ export default function BossDashboard({
 
         {activeTab === 'children' && (
           <div className="space-y-6">
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => setAddChildDialogOpen(true)}
-                data-testid="button-add-child"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
-              </Button>
-            </div>
             <Card>
               <CardHeader>
                 <CardTitle>{language === 'zh-TW' ? '孩童名單' : 'Children List'}</CardTitle>
@@ -661,6 +608,8 @@ export default function BossDashboard({
           currentManagerId={selectedFamily.managerId || ''}
           currentComplianceStatus={selectedFamily.complianceStatus}
           currentBoneAge={selectedFamily.boneAge}
+          currentManagerNotes={selectedFamily.managerNotes}
+          currentRole="boss"
           onSave={(data) => updateFamilyMutation.mutate(data)}
         />
       )}
@@ -699,22 +648,6 @@ export default function BossDashboard({
           language={language}
         />
       )}
-
-      <AddFamilyDialog
-        open={addFamilyDialogOpen}
-        onOpenChange={setAddFamilyDialogOpen}
-        language={language}
-        managers={managers}
-        onSave={(data) => addFamilyMutation.mutate(data)}
-      />
-
-      <AddChildDialog
-        open={addChildDialogOpen}
-        onOpenChange={setAddChildDialogOpen}
-        language={language}
-        families={families.map(f => ({ id: f.id, familyName: f.familyName }))}
-        onSave={(data) => addChildMutation.mutate(data)}
-      />
     </div>
   );
 }

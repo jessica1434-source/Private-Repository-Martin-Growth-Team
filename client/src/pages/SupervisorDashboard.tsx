@@ -83,16 +83,26 @@ export default function SupervisorDashboard({
       familyName: string; 
       country: string; 
       managerId: string;
-      complianceStatus: string;
+      complianceStatus?: string;
       boneAge?: number | null;
+      managerNotes?: string | null;
     }) => {
-      return await apiRequest('PATCH', `/api/families/${data.familyId}`, {
+      const payload: any = {
         familyName: data.familyName,
         country: data.country,
         managerId: data.managerId,
-        complianceStatus: data.complianceStatus,
         boneAge: data.boneAge,
-      });
+      };
+      
+      if (data.complianceStatus !== undefined) {
+        payload.complianceStatus = data.complianceStatus;
+      }
+      
+      if (data.managerNotes !== undefined) {
+        payload.managerNotes = data.managerNotes;
+      }
+      
+      return await apiRequest('PATCH', `/api/families/${data.familyId}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/families'] });
@@ -369,8 +379,9 @@ export default function SupervisorDashboard({
     familyName: string; 
     country: string; 
     managerId: string;
-    complianceStatus: string;
+    complianceStatus?: string;
     boneAge?: number | null;
+    managerNotes?: string | null;
   }) => {
     updateFamilyMutation.mutate(data);
   };
@@ -687,6 +698,8 @@ export default function SupervisorDashboard({
           currentManagerId={selectedFamily.managerId || ''}
           currentComplianceStatus={selectedFamily.complianceStatus}
           currentBoneAge={selectedFamily.boneAge}
+          currentManagerNotes={selectedFamily.managerNotes}
+          currentRole="supervisor"
           onSave={handleSaveFamily}
         />
       )}

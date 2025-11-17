@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -36,13 +37,16 @@ interface EditFamilyDialogProps {
   currentManagerId: string;
   currentComplianceStatus: string;
   currentBoneAge?: number | null;
+  currentManagerNotes?: string | null;
+  currentRole?: string;
   onSave?: (data: {
     familyId: string;
     familyName: string;
     country: string;
     managerId: string;
-    complianceStatus: string;
+    complianceStatus?: string;
     boneAge?: number | null;
+    managerNotes?: string | null;
   }) => void;
 }
 
@@ -57,6 +61,8 @@ export default function EditFamilyDialog({
   currentManagerId,
   currentComplianceStatus,
   currentBoneAge,
+  currentManagerNotes,
+  currentRole = 'manager',
   onSave,
 }: EditFamilyDialogProps) {
   const t = useTranslation(language);
@@ -65,6 +71,9 @@ export default function EditFamilyDialog({
   const [managerId, setManagerId] = useState(currentManagerId);
   const [complianceStatus, setComplianceStatus] = useState(currentComplianceStatus);
   const [boneAge, setBoneAge] = useState(currentBoneAge?.toString() || '');
+  const [managerNotes, setManagerNotes] = useState(currentManagerNotes || '');
+
+  const isManager = currentRole === 'manager';
 
   useEffect(() => {
     if (open) {
@@ -73,19 +82,29 @@ export default function EditFamilyDialog({
       setManagerId(currentManagerId);
       setComplianceStatus(currentComplianceStatus);
       setBoneAge(currentBoneAge?.toString() || '');
+      setManagerNotes(currentManagerNotes || '');
     }
-  }, [open, currentFamilyName, currentCountry, currentManagerId, currentComplianceStatus, currentBoneAge]);
+  }, [open, currentFamilyName, currentCountry, currentManagerId, currentComplianceStatus, currentBoneAge, currentManagerNotes]);
 
   const handleSave = () => {
-    if (familyName && country && managerId && complianceStatus) {
-      onSave?.({
+    const basicValidation = familyName && country && managerId;
+    const supervisorValidation = !isManager ? complianceStatus : true;
+    
+    if (basicValidation && supervisorValidation) {
+      const saveData: any = {
         familyId,
         familyName,
         country,
         managerId,
-        complianceStatus,
         boneAge: boneAge ? parseFloat(boneAge) : null,
-      });
+      };
+      
+      if (!isManager) {
+        saveData.complianceStatus = complianceStatus;
+        saveData.managerNotes = managerNotes || null;
+      }
+      
+      onSave?.(saveData);
       onOpenChange(false);
     }
   };
@@ -150,27 +169,45 @@ export default function EditFamilyDialog({
             </Select>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="edit-compliance-status">
-              {language === 'zh-TW' ? '合規狀態' : 'Compliance Status'}
-            </Label>
-            <Select value={complianceStatus} onValueChange={setComplianceStatus}>
-              <SelectTrigger id="edit-compliance-status" data-testid="select-edit-compliance-status">
-                <SelectValue placeholder={language === 'zh-TW' ? '選擇狀態' : 'Select status'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="green">
-                  {language === 'zh-TW' ? '🟢 正常' : '🟢 Normal'}
-                </SelectItem>
-                <SelectItem value="yellow">
-                  {language === 'zh-TW' ? '🟡 注意' : '🟡 Attention'}
-                </SelectItem>
-                <SelectItem value="red">
-                  {language === 'zh-TW' ? '🔴 風險' : '🔴 Risk'}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {!isManager && (
+            <>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-compliance-status">
+                  {language === 'zh-TW' ? '合規狀態' : 'Compliance Status'}
+                </Label>
+                <Select value={complianceStatus} onValueChange={setComplianceStatus}>
+                  <SelectTrigger id="edit-compliance-status" data-testid="select-edit-compliance-status">
+                    <SelectValue placeholder={language === 'zh-TW' ? '選擇狀態' : 'Select status'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="green">
+                      {language === 'zh-TW' ? '🟢 正常' : '🟢 Normal'}
+                    </SelectItem>
+                    <SelectItem value="yellow">
+                      {language === 'zh-TW' ? '🟡 注意' : '🟡 Attention'}
+                    </SelectItem>
+                    <SelectItem value="red">
+                      {language === 'zh-TW' ? '🔴 風險' : '🔴 Risk'}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="edit-manager-notes">
+                  {language === 'zh-TW' ? '執行狀況說明' : 'Execution Notes'}
+                </Label>
+                <Textarea
+                  id="edit-manager-notes"
+                  value={managerNotes}
+                  onChange={(e) => setManagerNotes(e.target.value)}
+                  placeholder={language === 'zh-TW' ? '記錄執行狀況和注意事項' : 'Record execution status and notes'}
+                  data-testid="textarea-edit-manager-notes"
+                  rows={3}
+                />
+              </div>
+            </>
+          )}
 
           <div className="grid gap-2">
             <Label htmlFor="edit-bone-age">
@@ -193,7 +230,7 @@ export default function EditFamilyDialog({
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={!familyName || !country || !managerId || !complianceStatus}
+            disabled={!familyName || !country || !managerId || (!isManager && !complianceStatus)}
             data-testid="button-save"
           >
             {t.save}
