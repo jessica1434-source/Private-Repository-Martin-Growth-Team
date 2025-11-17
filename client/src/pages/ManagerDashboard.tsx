@@ -133,7 +133,7 @@ export default function ManagerDashboard({
   });
 
   const updateFamilyMutation = useMutation({
-    mutationFn: async (data: { id: string; familyName: string; country: string; boneAge?: number }) => {
+    mutationFn: async (data: { id: string; familyName: string; country: string; boneAge?: number; complianceStatus?: string; managerNotes?: string }) => {
       const { id, ...updateData } = data;
       return await apiRequest('PATCH', `/api/families/${id}`, updateData);
     },
@@ -358,6 +358,8 @@ export default function ManagerDashboard({
               familyName: data.familyName,
               country: data.country,
               boneAge: data.boneAge ?? undefined,
+              complianceStatus: data.complianceStatus,
+              managerNotes: data.managerNotes ?? undefined,
             });
           }}
         />

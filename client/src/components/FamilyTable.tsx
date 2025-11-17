@@ -58,22 +58,26 @@ export default function FamilyTable({ families, language, onView, onEdit, onDele
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => onView?.(family.id)}
-                    data-testid={`button-view-${family.id}`}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => onEdit?.(family.id)}
-                    data-testid={`button-edit-${family.id}`}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  {onView && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onView(family.id)}
+                      data-testid={`button-view-${family.id}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onEdit && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onEdit(family.id)}
+                      data-testid={`button-edit-${family.id}`}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                   {onDelete && (
                     <Button 
                       variant="outline" 
