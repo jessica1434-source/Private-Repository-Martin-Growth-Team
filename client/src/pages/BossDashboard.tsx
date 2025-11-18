@@ -113,6 +113,7 @@ export default function BossDashboard({
 
   const familyTableData = families.map(family => {
     const manager = managers.find(m => m.id === family.managerId);
+    const supervisor = manager?.supervisorId ? managers.find(m => m.id === manager.supervisorId) : null;
     const childrenCount = children.filter(c => c.familyId === family.id).length;
     return {
       id: family.id,
@@ -120,6 +121,7 @@ export default function BossDashboard({
       country: family.country,
       managerName: manager?.name || '-',
       managerRole: manager?.role,
+      supervisorName: supervisor?.name,
       childrenCount,
       complianceStatus: family.complianceStatus as 'red' | 'yellow' | 'green',
       notes: family.managerNotes || '',

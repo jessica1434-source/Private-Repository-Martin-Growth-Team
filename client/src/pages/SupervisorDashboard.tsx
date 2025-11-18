@@ -92,6 +92,14 @@ export default function SupervisorDashboard({
 
   const familyTableData = subordinateFamilies.map(family => {
     const manager = subordinateManagers.find(m => m.id === family.managerId);
+    let supervisor = null;
+    if (manager?.supervisorId) {
+      if (manager.supervisorId === currentSupervisor?.id) {
+        supervisor = currentSupervisor;
+      } else {
+        supervisor = subordinateManagers.find(m => m.id === manager.supervisorId);
+      }
+    }
     const childrenCount = subordinateChildren.filter(c => c.familyId === family.id).length;
     return {
       id: family.id,
@@ -99,6 +107,7 @@ export default function SupervisorDashboard({
       country: family.country,
       managerName: manager?.name || '-',
       managerRole: manager?.role,
+      supervisorName: supervisor?.name,
       childrenCount,
       complianceStatus: family.complianceStatus as 'red' | 'yellow' | 'green',
       notes: family.managerNotes || '',

@@ -18,6 +18,7 @@ interface FamilyData {
   country: string;
   managerName: string;
   managerRole?: string;
+  supervisorName?: string;
   childrenCount: number;
   complianceStatus: 'red' | 'yellow' | 'green';
   notes: string;
@@ -69,6 +70,11 @@ export default function FamilyTable({ families, language, onView, onEdit, onDele
                   {family.managerRole && (
                     <span className="text-xs text-muted-foreground" data-testid={`manager-role-${family.id}`}>
                       {getRoleText(family.managerRole)}
+                    </span>
+                  )}
+                  {family.supervisorName && (
+                    <span className="text-xs text-muted-foreground" data-testid={`supervisor-name-${family.id}`}>
+                      {language === 'zh-TW' ? '主任：' : 'Supervisor: '}{family.supervisorName}
                     </span>
                   )}
                 </div>
