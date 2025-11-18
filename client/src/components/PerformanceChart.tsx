@@ -4,7 +4,7 @@ import type { Language } from "@/lib/i18n";
 
 interface PerformanceChartProps {
   title: string;
-  data: Array<{ name: string; height: number; weight: number }>;
+  data: Array<{ name: string; height: number; weight?: number }>;
   language: Language;
 }
 
@@ -41,11 +41,6 @@ export default function PerformanceChart({ title, data, language }: PerformanceC
                 dataKey="height" 
                 fill="hsl(var(--chart-1))" 
                 name={language === 'zh-TW' ? '平均身高增長 (cm)' : 'Avg Height Growth (cm)'}
-              />
-              <Bar 
-                dataKey="weight" 
-                fill="hsl(var(--chart-2))" 
-                name={language === 'zh-TW' ? '平均體重增長 (kg)' : 'Avg Weight Growth (kg)'}
               />
             </BarChart>
           </ResponsiveContainer>
