@@ -959,6 +959,61 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/children/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found / 無權限：未找到管理員資料" });
+      }
+      
+      const childId = req.params.id;
+      const child = await storage.getChild(childId);
+      
+      if (!child) {
+        return res.status(404).json({ message: "Child not found / 兒童不存在" });
+      }
+      
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        return res.status(404).json({ message: "Family not found / 家庭不存在" });
+      }
+      
+      // Boss has read-only access - cannot update children
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to children / 無權限：老闆對兒童只有查看權限" });
+      }
+      
+      // Supervisor has read-only access - cannot update children
+      if (manager.role === 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Supervisor has read-only access to children / 無權限：主任對兒童只有查看權限" });
+      }
+      
+      // Only manager can update children, and only their own families' children
+      if (manager.role === 'manager') {
+        if (family.managerId !== manager.id) {
+          return res.status(403).json({ message: "Access denied: Can only update children from your own families / 無權限：只能更新自己家庭的兒童" });
+        }
+      }
+      
+      // Validate boneAge if provided
+      const { boneAge } = req.body;
+      if (boneAge !== null && boneAge !== undefined) {
+        const boneAgeNum = parseFloat(boneAge);
+        if (isNaN(boneAgeNum) || boneAgeNum < 0 || boneAgeNum > 30) {
+          return res.status(400).json({ message: "Invalid bone age value / 骨齡數值無效" });
+        }
+      }
+      
+      await storage.updateChild(childId, { boneAge: boneAge === null ? null : parseFloat(boneAge) });
+      const updatedChild = await storage.getChild(childId);
+      res.json(updatedChild);
+    } catch (error) {
+      console.error("Error updating child:", error);
+      res.status(500).json({ message: "Failed to update child / 更新兒童資料失敗" });
+    }
+  });
+
   app.delete('/api/children/:id', isAuthenticated, async (req: any, res) => {
     try {
       const manager = getCurrentManager(req);

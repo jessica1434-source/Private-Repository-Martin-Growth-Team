@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
 import AddChildDialog from "@/components/AddChildDialog";
 import EditFamilyDialog from "@/components/EditFamilyDialog";
+import EditChildDialog from "@/components/EditChildDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import GrowthRecordDialog from "@/components/GrowthRecordDialog";
 import LanguageToggle from "@/components/LanguageToggle";
@@ -39,6 +40,7 @@ export default function ManagerDashboard({
   const [addRecordDialogOpen, setAddRecordDialogOpen] = useState(false);
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
+  const [editChildDialogOpen, setEditChildDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
 
@@ -76,6 +78,7 @@ export default function ManagerDashboard({
       name: child.name,
       birthday: child.birthday,
       familyName: family?.familyName || '-',
+      boneAge: child.boneAge,
       lastHeight: latestRecord?.height,
       lastWeight: latestRecord?.weight,
       lastRecordDate: latestRecord?.recordDate,
@@ -90,6 +93,11 @@ export default function ManagerDashboard({
   const handleAddRecord = (childId: string) => {
     setSelectedChild(childId);
     setAddRecordDialogOpen(true);
+  };
+
+  const handleEditChild = (childId: string) => {
+    setSelectedChild(childId);
+    setEditChildDialogOpen(true);
   };
 
   const addRecordMutation = useMutation({
@@ -149,6 +157,27 @@ export default function ManagerDashboard({
       toast({
         title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
         description: language === 'zh-TW' ? '無法更新家庭資訊' : 'Failed to update family information',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateChildMutation = useMutation({
+    mutationFn: async (data: { childId: string; boneAge: number | null }) => {
+      return await apiRequest('PATCH', `/api/children/${data.childId}`, { boneAge: data.boneAge });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '更新成功' : 'Child Updated',
+        description: language === 'zh-TW' ? '孩童資訊已更新' : 'Child information has been updated successfully',
+      });
+      setEditChildDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
+        description: language === 'zh-TW' ? '無法更新孩童資訊' : 'Failed to update child information',
         variant: 'destructive',
       });
     },
@@ -296,6 +325,7 @@ export default function ManagerDashboard({
                 language={language}
                 onViewHistory={handleViewHistory}
                 onAddRecord={handleAddRecord}
+                onEdit={handleEditChild}
               />
             </CardContent>
           </Card>
@@ -364,6 +394,16 @@ export default function ManagerDashboard({
           }}
         />
       )}
+
+      <EditChildDialog
+        child={selectedChildData || null}
+        open={editChildDialogOpen}
+        onOpenChange={setEditChildDialogOpen}
+        language={language}
+        onSave={(childId, boneAge) => {
+          updateChildMutation.mutate({ childId, boneAge });
+        }}
+      />
     </div>
   );
 }

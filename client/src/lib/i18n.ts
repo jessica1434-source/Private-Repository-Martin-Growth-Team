@@ -48,6 +48,7 @@ export const translations = {
     age: '年齡',
     height: '身高',
     weight: '體重',
+    boneAge: '骨齡',
     lastRecord: '最後紀錄',
     actions: '操作',
     
@@ -60,6 +61,8 @@ export const translations = {
     edit: '編輯',
     delete: '刪除',
     view: '查看',
+    editChild: '編輯孩童資料',
+    childInfo: '孩童資訊',
     
     // Units
     cm: '公分',
@@ -152,6 +155,7 @@ export const translations = {
     age: 'Age',
     height: 'Height',
     weight: 'Weight',
+    boneAge: 'Bone Age',
     lastRecord: 'Last Record',
     actions: 'Actions',
     
@@ -164,6 +168,8 @@ export const translations = {
     edit: 'Edit',
     delete: 'Delete',
     view: 'View',
+    editChild: 'Edit Child',
+    childInfo: 'Child Information',
     
     // Units
     cm: 'cm',

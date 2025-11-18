@@ -51,6 +51,7 @@ export const children = pgTable("children", {
   name: text("name").notNull(),
   birthday: date("birthday").notNull(),
   familyId: varchar("family_id").notNull().references(() => families.id),
+  boneAge: real("bone_age"),
 });
 
 export const growthRecords = pgTable("growth_records", {

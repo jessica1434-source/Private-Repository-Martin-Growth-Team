@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Plus, TrendingUp, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, Trash2, Pencil } from "lucide-react";
 import { format, differenceInYears, differenceInMonths } from "date-fns";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
@@ -17,6 +17,7 @@ interface ChildData {
   name: string;
   birthday: string;
   familyName: string;
+  boneAge?: number | null;
   lastHeight?: number;
   lastWeight?: number;
   lastRecordDate?: string;
@@ -28,9 +29,10 @@ interface ChildrenTableProps {
   onAddRecord?: (childId: string) => void;
   onViewHistory?: (childId: string) => void;
   onDelete?: (childId: string) => void;
+  onEdit?: (childId: string) => void;
 }
 
-export default function ChildrenTable({ children, language, onAddRecord, onViewHistory, onDelete }: ChildrenTableProps) {
+export default function ChildrenTable({ children, language, onAddRecord, onViewHistory, onDelete, onEdit }: ChildrenTableProps) {
   const t = useTranslation(language);
 
   const calculateAge = (birthday: string) => {
@@ -52,6 +54,7 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
             <TableHead>{t.childName}</TableHead>
             <TableHead>{t.familyName}</TableHead>
             <TableHead>{t.age}</TableHead>
+            <TableHead>{t.boneAge} ({t.years})</TableHead>
             <TableHead>{t.height} ({t.cm})</TableHead>
             <TableHead>{t.weight} ({t.kg})</TableHead>
             <TableHead>{t.lastRecord}</TableHead>
@@ -64,6 +67,9 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
               <TableCell className="font-medium">{child.name}</TableCell>
               <TableCell>{child.familyName}</TableCell>
               <TableCell>{calculateAge(child.birthday)}</TableCell>
+              <TableCell className="font-mono" data-testid={`bone-age-${child.id}`}>
+                {child.boneAge !== null && child.boneAge !== undefined ? child.boneAge.toFixed(1) : '-'}
+              </TableCell>
               <TableCell className="font-mono">
                 {child.lastHeight ? child.lastHeight.toFixed(1) : '-'}
               </TableCell>
@@ -93,6 +99,16 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
                       data-testid={`button-add-record-${child.id}`}
                     >
                       <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onEdit && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onEdit(child.id)}
+                      data-testid={`button-edit-${child.id}`}
+                    >
+                      <Pencil className="h-4 w-4" />
                     </Button>
                   )}
                   {onDelete && (

@@ -191,6 +191,7 @@ export default function BossDashboard({
       name: child.name,
       birthday: child.birthday,
       familyName: family?.familyName || '-',
+      boneAge: child.boneAge,
       lastHeight: latestRecord?.height,
       lastWeight: latestRecord?.weight,
       lastRecordDate: latestRecord?.recordDate,
