@@ -387,7 +387,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied: Only supervisor and manager can create families" });
       }
       
-      const { familyName, country, managerId, complianceStatus = 'green', boneAge } = req.body;
+      const { familyName, country, managerId, complianceStatus = 'green' } = req.body;
       
       // Validate required fields
       if (!familyName || !country || !managerId) {
@@ -403,16 +403,12 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
-      const familyData: any = {
+      const familyData = {
         familyName,
         country,
         managerId,
         complianceStatus,
       };
-      
-      if (boneAge !== undefined && boneAge !== null) {
-        familyData.boneAge = parseFloat(boneAge);
-      }
       
       const family = await storage.createFamily(familyData);
       res.status(201).json(family);
