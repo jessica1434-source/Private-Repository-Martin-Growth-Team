@@ -8,6 +8,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**MULTI-CHILD FAMILY CREATION ENHANCEMENT**
+- **AddFamilyWithChildDialog Enhancement**: Updated to support unlimited dynamic child addition within a single dialog
+- **UI Changes**: Added "新增孩童" button inside dialog to add more child cards; each child card has a remove button (hidden when only one child remains)
+- **Children Array Support**: Dialog now accepts and validates an array of children, each with name, birthday, and optional bone age
+- **Backend Integration**: Uses Promise.all to batch create all children after family creation
+- **Standalone Button Removal**: Removed "新增孩童" button from ManagerDashboard toolbar - all child creation now flows through family creation
+- **Component Cleanup**: Removed AddChildDialog component and related state/mutations from ManagerDashboard
+- **User Experience**: Streamlined workflow - managers create families with one or more children in a single operation
+- **Success Feedback**: Toast message displays count of children added (e.g., "家庭與 3 位孩童已新增")
+- **E2E Testing**: Verified multi-child addition (tested with 3 children), confirmed standalone add-child button removed
+- **Architect Note**: Current implementation uses sequential API calls (family POST → children POSTs); partial failures may leave inconsistent data. Enhancement to atomic transaction endpoint available if needed.
+
 **FAMILY DIALOG BONE AGE FIELD REMOVAL**
 - **EditFamilyDialog Cleanup**: Removed bone age input field from family editing dialog
 - **AddFamilyDialog Cleanup**: Removed bone age input field from family creation dialog (note: AddFamilyWithChildDialog retains bone age for child)
