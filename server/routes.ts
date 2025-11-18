@@ -475,10 +475,6 @@ export function registerRoutes(app: Express): Server {
         updateData.managerNotes = req.body.managerNotes;
       }
       
-      if (req.body.boneAge !== undefined) {
-        updateData.boneAge = req.body.boneAge;
-      }
-      
       const updatedFamily = await storage.updateFamily(familyId, updateData);
       res.json(updatedFamily);
     } catch (error) {
