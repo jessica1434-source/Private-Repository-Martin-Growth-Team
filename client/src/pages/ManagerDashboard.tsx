@@ -199,14 +199,28 @@ export default function ManagerDashboard({
         boneAge?: number | null;
       };
     }) => {
-      const family = await apiRequest('POST', '/api/families', data.family);
-      const child = await apiRequest('POST', '/api/children', {
-        ...data.child,
-        familyId: family.id,
-      });
-      return { family, child };
+      console.log('[addFamilyWithChild] Starting mutation with data:', JSON.stringify(data, null, 2));
+      try {
+        console.log('[addFamilyWithChild] Creating family with payload:', JSON.stringify(data.family, null, 2));
+        const family = await apiRequest('POST', '/api/families', data.family) as unknown as Family;
+        console.log('[addFamilyWithChild] Family created:', JSON.stringify(family, null, 2));
+        
+        const childPayload = {
+          ...data.child,
+          familyId: family.id,
+        };
+        console.log('[addFamilyWithChild] Creating child with payload:', JSON.stringify(childPayload, null, 2));
+        const child = await apiRequest('POST', '/api/children', childPayload) as unknown as Child;
+        console.log('[addFamilyWithChild] Child created:', JSON.stringify(child, null, 2));
+        
+        return { family, child };
+      } catch (error) {
+        console.error('[addFamilyWithChild] Error during mutation:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log('[addFamilyWithChild] Mutation succeeded');
       queryClient.invalidateQueries({ queryKey: ['/api/families/manager', managerId] });
       queryClient.invalidateQueries({ queryKey: ['/api/children'] });
       toast({
@@ -215,10 +229,12 @@ export default function ManagerDashboard({
       });
       setAddFamilyDialogOpen(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('[addFamilyWithChild] Mutation failed:', error);
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
       toast({
         title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
-        description: language === 'zh-TW' ? '無法新增家庭與孩童' : 'Failed to add family and child',
+        description: language === 'zh-TW' ? `無法新增家庭與孩童: ${errorMessage}` : `Failed to add family and child: ${errorMessage}`,
         variant: 'destructive',
       });
     },

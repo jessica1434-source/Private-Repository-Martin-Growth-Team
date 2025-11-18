@@ -584,7 +584,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied: Only supervisor and manager can create children" });
       }
       
-      const { name, birthday, familyId } = req.body;
+      const { name, birthday, familyId, boneAge } = req.body;
       
       // Validate required fields
       if (!name || !birthday || !familyId) {
@@ -606,10 +606,20 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
+      // Parse and validate boneAge if provided
+      let parsedBoneAge: number | null = null;
+      if (boneAge !== null && boneAge !== undefined && boneAge !== '') {
+        parsedBoneAge = parseFloat(boneAge);
+        if (isNaN(parsedBoneAge) || parsedBoneAge < 0 || parsedBoneAge > 30) {
+          return res.status(400).json({ message: "Bone age must be between 0 and 30 years" });
+        }
+      }
+      
       const childData = {
         name,
         birthday,
         familyId,
+        boneAge: parsedBoneAge,
       };
       
       const child = await storage.createChild(childData);
