@@ -8,6 +8,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**ADD FAMILY WITH CHILD FEATURE**
+- **Combined Creation**: Created AddFamilyWithChildDialog component allowing managers to create family and first child simultaneously
+- **Manager Interface**: Added "新增家庭" button to ManagerDashboard alongside existing "新增孩童" button
+- **Sequential API Calls**: Mutation chains POST /api/families → POST /api/children with familyId from family creation
+- **Response Handling Fix**: Fixed critical bug where apiRequest Response objects weren't parsed with .json() before use
+- **Bone Age Integration**: Dialog includes bone age field (0-30 years) passed to child creation endpoint
+- **Backend Support**: Updated POST /api/children to accept, validate, and persist boneAge parameter during creation
+- **Bilingual Support**: Full Traditional Chinese/English support in dialog labels and messages
+- **E2E Testing**: Verified family creation, child creation, bone age persistence, and UI updates
+
 **BONE AGE TRACKING FEATURE**
 - **Schema Update**: Added boneAge column (real type) to children table
 - **Manager Editing**: Created EditChildDialog component allowing managers to edit bone age (0-30 years)
