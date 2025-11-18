@@ -75,22 +75,26 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => onViewHistory?.(child.id)}
-                    data-testid={`button-history-${child.id}`}
-                  >
-                    <TrendingUp className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={() => onAddRecord?.(child.id)}
-                    data-testid={`button-add-record-${child.id}`}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  {onViewHistory && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onViewHistory(child.id)}
+                      data-testid={`button-history-${child.id}`}
+                    >
+                      <TrendingUp className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {onAddRecord && (
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => onAddRecord(child.id)}
+                      data-testid={`button-add-record-${child.id}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  )}
                   {onDelete && (
                     <Button 
                       variant="outline" 

@@ -377,9 +377,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
       }
       
-      // Only boss and supervisor can create families
-      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can create families" });
+      // Boss has read-only access to families - cannot create
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to families" });
+      }
+      
+      // Only supervisor and manager can create families
+      if (manager.role !== 'supervisor' && manager.role !== 'manager') {
+        return res.status(403).json({ message: "Access denied: Only supervisor and manager can create families" });
       }
       
       const { familyName, country, managerId, complianceStatus = 'green', boneAge } = req.body;
@@ -433,7 +438,10 @@ export function registerRoutes(app: Express): Server {
       }
       
       // Authorization checks based on role
-      if (manager.role === 'supervisor') {
+      if (manager.role === 'boss') {
+        // Boss is view-only, cannot edit families
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to families" });
+      } else if (manager.role === 'supervisor') {
         // Supervisor is view-only, cannot edit families
         return res.status(403).json({ message: "Access denied: Supervisors have read-only access" });
       } else if (manager.role === 'manager') {
@@ -566,9 +574,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied: No manager profile found" });
       }
       
-      // Only boss and supervisor can create children
-      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can create children" });
+      // Boss has read-only access - cannot create children
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to children" });
+      }
+      
+      // Only supervisor and manager can create children
+      if (manager.role !== 'supervisor' && manager.role !== 'manager') {
+        return res.status(403).json({ message: "Access denied: Only supervisor and manager can create children" });
       }
       
       const { name, birthday, familyId } = req.body;
@@ -712,19 +725,22 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Family not found" });
       }
       
-      // Boss can add records for any child
-      if (manager.role !== 'boss') {
-        if (family.managerId !== manager.id) {
-          // Check if family belongs to a subordinate manager
-          if (manager.role === 'supervisor') {
-            const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
-            const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
-            if (!isSubordinateFamily) {
-              return res.status(403).json({ message: "Access denied: Cannot add records for this child" });
-            }
-          } else {
+      // Boss has read-only access - cannot create growth records
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to growth records" });
+      }
+      
+      // Check authorization for supervisor and manager
+      if (family.managerId !== manager.id) {
+        // Check if family belongs to a subordinate manager
+        if (manager.role === 'supervisor') {
+          const subordinateManagers = await storage.getManagersBySupervisor(manager.id);
+          const isSubordinateFamily = subordinateManagers.some(m => m.id === family.managerId);
+          if (!isSubordinateFamily) {
             return res.status(403).json({ message: "Access denied: Cannot add records for this child" });
           }
+        } else {
+          return res.status(403).json({ message: "Access denied: Cannot add records for this child" });
         }
       }
       
@@ -769,16 +785,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
-      // Boss can update any growth record
+      // Boss has read-only access - cannot update growth records
       if (manager.role === 'boss') {
-        const updateData: any = {};
-        if (req.body.recordDate) updateData.recordDate = req.body.recordDate;
-        if (req.body.height !== undefined) updateData.height = parseFloat(req.body.height);
-        if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
-        if (req.body.notes !== undefined) updateData.notes = req.body.notes;
-        
-        const updatedRecord = await storage.updateGrowthRecord(recordId, updateData);
-        return res.json(updatedRecord);
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to growth records / 無權限：老闆對成長記錄只有查看權限" });
       }
       
       // Supervisor can only update growth records for subordinate managers' children
@@ -844,10 +853,9 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
-      // Boss can delete any growth record
+      // Boss has read-only access - cannot delete growth records
       if (manager.role === 'boss') {
-        await storage.deleteGrowthRecord(recordId);
-        return res.json({ success: true, message: "Growth record deleted successfully / 成長記錄已成功刪除" });
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to growth records / 無權限：老闆對成長記錄只有查看權限" });
       }
       
       // Supervisor can only delete growth records for subordinate managers' children
@@ -924,9 +932,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
-      // Only boss and supervisor can delete families
-      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete families / 無權限：只有老闆和主管可以刪除家庭" });
+      // Boss has read-only access - cannot delete families
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to families / 無權限：老闆對家庭只有查看權限" });
+      }
+      
+      // Only supervisor and manager can delete families
+      if (manager.role !== 'supervisor' && manager.role !== 'manager') {
+        return res.status(403).json({ message: "Access denied: Only supervisor and manager can delete families / 無權限：只有主管和管理師可以刪除家庭" });
       }
       
       // Supervisor can only delete families of subordinate managers
@@ -966,9 +979,14 @@ export function registerRoutes(app: Express): Server {
         return res.status(404).json({ message: "Family not found / 家庭不存在" });
       }
       
-      // Only boss and supervisor can delete children
-      if (manager.role !== 'boss' && manager.role !== 'supervisor') {
-        return res.status(403).json({ message: "Access denied: Only boss and supervisor can delete children / 無權限：只有老闆和主管可以刪除兒童" });
+      // Boss has read-only access - cannot delete children
+      if (manager.role === 'boss') {
+        return res.status(403).json({ message: "Access denied: Boss has read-only access to children / 無權限：老闆對兒童只有查看權限" });
+      }
+      
+      // Only supervisor and manager can delete children
+      if (manager.role !== 'supervisor' && manager.role !== 'manager') {
+        return res.status(403).json({ message: "Access denied: Only supervisor and manager can delete children / 無權限：只有主管和管理師可以刪除兒童" });
       }
       
       // Supervisor can only delete children of subordinate managers' families
