@@ -8,13 +8,23 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**SUPERVISOR NAME DISPLAY IN FAMILY TABLES**
+- **FamilyTable Enhancement**: Family management tables now display supervisor names in manager column
+- **Three-Line Display**: Manager column shows:
+  - Line 1: Manager name (normal text)
+  - Line 2: Manager role - 主任管理師/Supervisor or 管理師/Manager (text-xs text-muted-foreground)
+  - Line 3: Supervisor name with "主任：" / "Supervisor: " prefix (text-xs text-muted-foreground)
+- **BossDashboard Implementation**: Finds supervisor via manager.supervisorId in full managers list
+- **SupervisorDashboard Implementation**: Uses currentSupervisor when manager.supervisorId matches logged-in supervisor
+- **Conditional Rendering**: Supervisor line only displays when supervisorName exists
+- **Data Flow**: familyTableData includes supervisorName field from supervisor lookup
+- **E2E Testing**: Verified both BossDashboard and SupervisorDashboard correctly display supervisor names
+
 **MANAGER ROLE DISPLAY IN FAMILY TABLES**
 - **FamilyTable Enhancement**: Family management tables now display both manager name and role (主任管理師/管理師)
-- **Two-Line Display**: Manager column shows name on first line, role on second line in smaller gray text (text-xs text-muted-foreground)
 - **Bilingual Support**: Role translation - supervisor → "主任管理師" (zh-TW) / "Supervisor" (en), manager → "管理師" (zh-TW) / "Manager" (en)
 - **Dashboard Coverage**: Applied to BossDashboard and SupervisorDashboard family tables
 - **Data Flow**: familyTableData includes managerRole field passed from manager?.role
-- **E2E Testing**: Verified both supervisor and manager roles display correctly in Boss Dashboard
 
 **BOSS VIEW-ONLY IMPLEMENTATION**
 - **Boss Role Restrictions**: Boss has VIEW-ONLY access to families, children, and growth records
