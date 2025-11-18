@@ -8,6 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**BOSS DASHBOARD PERFORMANCE CHART - WEIGHT REMOVAL**
+- **PerformanceChart Simplification**: Removed weight display from Boss Dashboard performance chart
+- **Chart Display**: Performance chart now shows only height bars (平均身高增長)
+- **Data Update**: performanceData entries no longer include weight values
+- **Interface Update**: Made weight property optional in PerformanceChart interface
+- **E2E Testing**: Verified performance chart displays only height data without weight
+
 **SUPERVISOR NAME DISPLAY IN FAMILY TABLES**
 - **FamilyTable Enhancement**: Family management tables now display supervisor names in manager column
 - **Three-Line Display**: Manager column shows:
