@@ -8,6 +8,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**INITIAL HEIGHT/WEIGHT INPUT DURING CHILD CREATION**
+- **AddFamilyWithChildDialog Enhancement**: Added height and weight input fields for each child during creation
+- **Input Validation**: Height field (0-300 cm) and weight field (0-200 kg) with HTML5 validation attributes
+- **Backend Integration**: POST /api/children accepts optional height and weight parameters
+- **Automatic Growth Record Creation**: When both height and weight are provided, system automatically creates initial growth record with:
+  - recordDate set to child's birthday
+  - height and weight values from input
+  - empty notes field
+- **Query Invalidation Fix**: Added invalidation of '/api/growth-records' query after child creation to ensure Growth History dialog displays new records immediately
+- **User Experience**: Managers can now input initial measurements when creating a child, eliminating the need for a separate "add first record" step
+- **E2E Testing**: Verified child creation with height 110.8 cm and weight 18.5 kg, confirmed growth record appears in history dialog with correct date and values
+- **Validation**: Both frontend (HTML5 attributes) and backend (parseFloat with range checks) validate height/weight values
+
 **MULTI-CHILD FAMILY CREATION ENHANCEMENT**
 - **AddFamilyWithChildDialog Enhancement**: Updated to support unlimited dynamic child addition within a single dialog
 - **UI Changes**: Added "新增孩童" button inside dialog to add more child cards; each child card has a remove button (hidden when only one child remains)
