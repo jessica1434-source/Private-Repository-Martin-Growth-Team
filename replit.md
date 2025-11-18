@@ -8,6 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**BONE AGE DATA MODEL CORRECTION**
+- **Issue Identified**: boneAge was incorrectly added to both families and children tables
+- **Schema Fix**: Removed boneAge from families table - bone age should only belong to children
+- **API Updates**: Removed boneAge handling from POST /api/families and PATCH /api/families
+- **Database Migration**: Executed `npm run db:push --force` to drop bone_age column from families table
+- **Data Loss**: 13 family records had their bone_age values removed (now properly tracked at child level)
+- **Verification**: E2E tested to confirm bone age creates, updates, and displays correctly for children only
+- **Architect Review**: Confirmed bone age handling is completely confined to children domain
+
 **ADD FAMILY WITH CHILD FEATURE**
 - **Combined Creation**: Created AddFamilyWithChildDialog component allowing managers to create family and first child simultaneously
 - **Manager Interface**: Added "新增家庭" button to ManagerDashboard alongside existing "新增孩童" button
