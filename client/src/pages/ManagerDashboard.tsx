@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
 import AddChildDialog from "@/components/AddChildDialog";
+import AddFamilyWithChildDialog from "@/components/AddFamilyWithChildDialog";
 import EditFamilyDialog from "@/components/EditFamilyDialog";
 import EditChildDialog from "@/components/EditChildDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
@@ -14,7 +15,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import StatusBadge from "@/components/StatusBadge";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { LogOut, Plus, Pencil } from "lucide-react";
+import { LogOut, Plus, Pencil, Home } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -39,6 +40,7 @@ export default function ManagerDashboard({
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [addRecordDialogOpen, setAddRecordDialogOpen] = useState(false);
   const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
+  const [addFamilyDialogOpen, setAddFamilyDialogOpen] = useState(false);
   const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
   const [editChildDialogOpen, setEditChildDialogOpen] = useState(false);
   const [selectedChild, setSelectedChild] = useState<string>('');
@@ -183,6 +185,45 @@ export default function ManagerDashboard({
     },
   });
 
+  const addFamilyWithChildMutation = useMutation({
+    mutationFn: async (data: {
+      family: {
+        familyName: string;
+        country: string;
+        managerId: string;
+        complianceStatus: string;
+      };
+      child: {
+        name: string;
+        birthday: string;
+        boneAge?: number | null;
+      };
+    }) => {
+      const family = await apiRequest('POST', '/api/families', data.family);
+      const child = await apiRequest('POST', '/api/children', {
+        ...data.child,
+        familyId: family.id,
+      });
+      return { family, child };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/families/manager', managerId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      toast({
+        title: language === 'zh-TW' ? '新增成功' : 'Successfully Added',
+        description: language === 'zh-TW' ? '家庭與孩童已新增' : 'Family and child have been added successfully',
+      });
+      setAddFamilyDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
+        description: language === 'zh-TW' ? '無法新增家庭與孩童' : 'Failed to add family and child',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const selectedChildData = myChildren.find(c => c.id === selectedChild);
   const selectedChildRecords = growthRecords.filter(r => r.childId === selectedChild);
 
@@ -308,7 +349,15 @@ export default function ManagerDashboard({
         <div className="space-y-6">
           <div className="flex gap-2">
             <Button 
+              onClick={() => setAddFamilyDialogOpen(true)}
+              data-testid="button-add-family"
+            >
+              <Home className="h-4 w-4 mr-2" />
+              {language === 'zh-TW' ? '新增家庭' : 'Add Family'}
+            </Button>
+            <Button 
               onClick={() => setAddChildDialogOpen(true)}
+              variant="outline"
               data-testid="button-add-child"
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -403,6 +452,15 @@ export default function ManagerDashboard({
         onSave={(childId, boneAge) => {
           updateChildMutation.mutate({ childId, boneAge });
         }}
+      />
+
+      <AddFamilyWithChildDialog
+        open={addFamilyDialogOpen}
+        onOpenChange={setAddFamilyDialogOpen}
+        language={language}
+        managerId={managerId}
+        onSave={(data) => addFamilyWithChildMutation.mutate(data)}
+        isPending={addFamilyWithChildMutation.isPending}
       />
     </div>
   );
