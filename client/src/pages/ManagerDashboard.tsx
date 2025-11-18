@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import ChildrenTable from "@/components/ChildrenTable";
-import AddChildDialog from "@/components/AddChildDialog";
 import AddFamilyWithChildDialog from "@/components/AddFamilyWithChildDialog";
 import EditFamilyDialog from "@/components/EditFamilyDialog";
 import EditChildDialog from "@/components/EditChildDialog";
@@ -39,7 +38,6 @@ export default function ManagerDashboard({
   const { toast } = useToast();
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [addRecordDialogOpen, setAddRecordDialogOpen] = useState(false);
-  const [addChildDialogOpen, setAddChildDialogOpen] = useState(false);
   const [addFamilyDialogOpen, setAddFamilyDialogOpen] = useState(false);
   const [editFamilyDialogOpen, setEditFamilyDialogOpen] = useState(false);
   const [editChildDialogOpen, setEditChildDialogOpen] = useState(false);
@@ -122,25 +120,6 @@ export default function ManagerDashboard({
     },
   });
 
-  const addChildMutation = useMutation({
-    mutationFn: async (data: { name: string; birthday: string; familyId: string }) => {
-      return await apiRequest('POST', '/api/children', data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
-      toast({
-        title: language === 'zh-TW' ? '新增成功' : 'Child Added',
-        description: language === 'zh-TW' ? '孩童已新增' : 'Child has been added successfully',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: language === 'zh-TW' ? '新增失敗' : 'Failed to Add',
-        description: language === 'zh-TW' ? '無法新增孩童' : 'Failed to add child',
-        variant: 'destructive',
-      });
-    },
-  });
 
   const updateFamilyMutation = useMutation({
     mutationFn: async (data: { id: string; familyName: string; country: string; complianceStatus?: string; managerNotes?: string }) => {
@@ -371,14 +350,6 @@ export default function ManagerDashboard({
               <Home className="h-4 w-4 mr-2" />
               {language === 'zh-TW' ? '新增家庭' : 'Add Family'}
             </Button>
-            <Button 
-              onClick={() => setAddChildDialogOpen(true)}
-              variant="outline"
-              data-testid="button-add-child"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
-            </Button>
           </div>
           <Card className="shadow-sm">
             <CardHeader>
@@ -424,14 +395,6 @@ export default function ManagerDashboard({
           />
         </>
       )}
-
-      <AddChildDialog
-        open={addChildDialogOpen}
-        onOpenChange={setAddChildDialogOpen}
-        language={language}
-        families={myFamilies.map(f => ({ id: f.id, familyName: f.familyName }))}
-        onSave={(data) => addChildMutation.mutate(data)}
-      />
 
       {selectedFamily && currentManager && (
         <EditFamilyDialog
