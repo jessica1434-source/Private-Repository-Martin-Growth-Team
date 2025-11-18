@@ -27,6 +27,8 @@ interface Child {
   name: string;
   birthday: string;
   boneAge: string;
+  height: string;
+  weight: string;
 }
 
 interface AddFamilyWithChildDialogProps {
@@ -45,6 +47,8 @@ interface AddFamilyWithChildDialogProps {
       name: string;
       birthday: string;
       boneAge?: number | null;
+      height?: number | null;
+      weight?: number | null;
     }[];
   }) => void;
   isPending?: boolean;
@@ -63,7 +67,7 @@ export default function AddFamilyWithChildDialog({
   const [country, setCountry] = useState("");
   const [complianceStatus, setComplianceStatus] = useState("green");
   const [children, setChildren] = useState<Child[]>([
-    { name: "", birthday: "", boneAge: "" }
+    { name: "", birthday: "", boneAge: "", height: "", weight: "" }
   ]);
 
   useEffect(() => {
@@ -71,12 +75,12 @@ export default function AddFamilyWithChildDialog({
       setFamilyName("");
       setCountry("");
       setComplianceStatus("green");
-      setChildren([{ name: "", birthday: "", boneAge: "" }]);
+      setChildren([{ name: "", birthday: "", boneAge: "", height: "", weight: "" }]);
     }
   }, [open]);
 
   const addChild = () => {
-    setChildren([...children, { name: "", birthday: "", boneAge: "" }]);
+    setChildren([...children, { name: "", birthday: "", boneAge: "", height: "", weight: "" }]);
   };
 
   const removeChild = (index: number) => {
@@ -106,6 +110,8 @@ export default function AddFamilyWithChildDialog({
           name: child.name,
           birthday: child.birthday,
           boneAge: child.boneAge ? parseFloat(child.boneAge) : null,
+          height: child.height ? parseFloat(child.height) : null,
+          weight: child.weight ? parseFloat(child.weight) : null,
         })),
       });
     }
@@ -263,6 +269,40 @@ export default function AddFamilyWithChildDialog({
                       onChange={(e) => updateChild(index, 'boneAge', e.target.value)}
                       placeholder={language === 'zh-TW' ? '例如：8.5（選填）' : 'e.g., 8.5 (optional)'}
                       data-testid={`input-bone-age-${index}`}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor={`height-${index}`}>
+                      {language === 'zh-TW' ? '身高（公分）' : 'Height (cm)'}
+                    </Label>
+                    <Input
+                      id={`height-${index}`}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="300"
+                      value={child.height}
+                      onChange={(e) => updateChild(index, 'height', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：120.5（選填）' : 'e.g., 120.5 (optional)'}
+                      data-testid={`input-height-${index}`}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor={`weight-${index}`}>
+                      {language === 'zh-TW' ? '體重（公斤）' : 'Weight (kg)'}
+                    </Label>
+                    <Input
+                      id={`weight-${index}`}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="200"
+                      value={child.weight}
+                      onChange={(e) => updateChild(index, 'weight', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：25.3（選填）' : 'e.g., 25.3 (optional)'}
+                      data-testid={`input-weight-${index}`}
                     />
                   </div>
                 </CardContent>
