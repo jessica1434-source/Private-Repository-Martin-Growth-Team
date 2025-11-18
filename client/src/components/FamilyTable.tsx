@@ -17,6 +17,7 @@ interface FamilyData {
   familyName: string;
   country: string;
   managerName: string;
+  managerRole?: string;
   childrenCount: number;
   complianceStatus: 'red' | 'yellow' | 'green';
   notes: string;
@@ -32,6 +33,17 @@ interface FamilyTableProps {
 
 export default function FamilyTable({ families, language, onView, onEdit, onDelete }: FamilyTableProps) {
   const t = useTranslation(language);
+
+  const getRoleText = (role?: string) => {
+    if (!role) return '';
+    if (role === 'supervisor') {
+      return language === 'zh-TW' ? '主任管理師' : 'Supervisor';
+    }
+    if (role === 'manager') {
+      return language === 'zh-TW' ? '管理師' : 'Manager';
+    }
+    return '';
+  };
 
   return (
     <div className="rounded-md border" data-testid="table-families">
@@ -51,7 +63,16 @@ export default function FamilyTable({ families, language, onView, onEdit, onDele
             <TableRow key={family.id} data-testid={`row-family-${family.id}`}>
               <TableCell className="font-medium">{family.familyName}</TableCell>
               <TableCell>{family.country}</TableCell>
-              <TableCell>{family.managerName}</TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-0.5">
+                  <span>{family.managerName}</span>
+                  {family.managerRole && (
+                    <span className="text-xs text-muted-foreground" data-testid={`manager-role-${family.id}`}>
+                      {getRoleText(family.managerRole)}
+                    </span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell className="font-mono">{family.childrenCount}</TableCell>
               <TableCell>
                 <StatusBadge status={family.complianceStatus} language={language} />

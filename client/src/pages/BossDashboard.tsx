@@ -119,6 +119,7 @@ export default function BossDashboard({
       familyName: family.familyName,
       country: family.country,
       managerName: manager?.name || '-',
+      managerRole: manager?.role,
       childrenCount,
       complianceStatus: family.complianceStatus as 'red' | 'yellow' | 'green',
       notes: family.managerNotes || '',
