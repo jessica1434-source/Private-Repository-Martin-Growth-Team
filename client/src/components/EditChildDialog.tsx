@@ -43,6 +43,7 @@ export default function EditChildDialog({
     
     const boneAgeValue = boneAge.trim() === '' ? null : parseFloat(boneAge);
     onSave(child.id, boneAgeValue);
+    onOpenChange(false);
   };
 
   if (!child) return null;
