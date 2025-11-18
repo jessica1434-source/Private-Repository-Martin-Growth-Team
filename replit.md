@@ -6,6 +6,23 @@ A bilingual (Traditional Chinese/English) dashboard system designed for tracking
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (November 18, 2025)
+
+**MANAGER ROLE DISPLAY IN FAMILY TABLES**
+- **FamilyTable Enhancement**: Family management tables now display both manager name and role (主任管理師/管理師)
+- **Two-Line Display**: Manager column shows name on first line, role on second line in smaller gray text (text-xs text-muted-foreground)
+- **Bilingual Support**: Role translation - supervisor → "主任管理師" (zh-TW) / "Supervisor" (en), manager → "管理師" (zh-TW) / "Manager" (en)
+- **Dashboard Coverage**: Applied to BossDashboard and SupervisorDashboard family tables
+- **Data Flow**: familyTableData includes managerRole field passed from manager?.role
+- **E2E Testing**: Verified both supervisor and manager roles display correctly in Boss Dashboard
+
+**BOSS VIEW-ONLY IMPLEMENTATION**
+- **Boss Role Restrictions**: Boss has VIEW-ONLY access to families, children, and growth records
+- **Backend Authorization**: All POST/PATCH/DELETE routes for families/children/growth records return 403 for Boss
+- **Frontend UI**: Boss Dashboard shows only view/history buttons - no add/edit/delete buttons
+- **Preserved Capabilities**: Boss can still promote/manage managers via PATCH /api/managers/:id
+- **Component Updates**: ChildrenTable conditionally renders all action buttons based on handler presence
+
 ## System Architecture
 
 ### Frontend Architecture
