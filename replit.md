@@ -8,6 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**FAMILY DIALOG BONE AGE FIELD REMOVAL**
+- **EditFamilyDialog Cleanup**: Removed bone age input field from family editing dialog
+- **AddFamilyDialog Cleanup**: Removed bone age input field from family creation dialog (note: AddFamilyWithChildDialog retains bone age for child)
+- **Component Updates**: Removed currentBoneAge prop from EditFamilyDialog interface
+- **Mutation Updates**: Removed boneAge from updateFamilyMutation in ManagerDashboard
+- **User Experience**: Family editing now exclusively handles family-level data (name, country, manager, compliance status, notes)
+- **E2E Testing**: Verified EditFamilyDialog does not contain bone age input field
+- **Architect Review**: Confirmed bone age editing completely removed from family management UI, only available in child management
+
 **BONE AGE DATA MODEL CORRECTION**
 - **Issue Identified**: boneAge was incorrectly added to both families and children tables
 - **Schema Fix**: Removed boneAge from families table - bone age should only belong to children
