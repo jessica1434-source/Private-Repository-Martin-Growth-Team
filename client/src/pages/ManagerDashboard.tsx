@@ -193,34 +193,41 @@ export default function ManagerDashboard({
         managerId: string;
         complianceStatus: string;
       };
-      child: {
+      children: {
         name: string;
         birthday: string;
         boneAge?: number | null;
-      };
+      }[];
     }) => {
       try {
         const familyRes = await apiRequest('POST', '/api/families', data.family);
         const family = await familyRes.json() as Family;
         
-        const childPayload = {
-          ...data.child,
-          familyId: family.id,
-        };
-        const childRes = await apiRequest('POST', '/api/children', childPayload);
-        const child = await childRes.json() as Child;
+        const childrenResults = await Promise.all(
+          data.children.map(async (childData) => {
+            const childPayload = {
+              ...childData,
+              familyId: family.id,
+            };
+            const childRes = await apiRequest('POST', '/api/children', childPayload);
+            return await childRes.json() as Child;
+          })
+        );
         
-        return { family, child };
+        return { family, children: childrenResults };
       } catch (error) {
         throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/families/manager', managerId] });
       queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      const childCount = data.children.length;
       toast({
         title: language === 'zh-TW' ? '新增成功' : 'Successfully Added',
-        description: language === 'zh-TW' ? '家庭與孩童已新增' : 'Family and child have been added successfully',
+        description: language === 'zh-TW' 
+          ? `家庭與 ${childCount} 位孩童已新增` 
+          : `Family and ${childCount} child${childCount > 1 ? 'ren' : ''} have been added successfully`,
       });
       setAddFamilyDialogOpen(false);
     },

@@ -18,8 +18,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, Plus } from "lucide-react";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
+
+interface Child {
+  name: string;
+  birthday: string;
+  boneAge: string;
+}
 
 interface AddFamilyWithChildDialogProps {
   open: boolean;
@@ -33,11 +41,11 @@ interface AddFamilyWithChildDialogProps {
       managerId: string;
       complianceStatus: string;
     };
-    child: {
+    children: {
       name: string;
       birthday: string;
       boneAge?: number | null;
-    };
+    }[];
   }) => void;
   isPending?: boolean;
 }
@@ -54,23 +62,39 @@ export default function AddFamilyWithChildDialog({
   const [familyName, setFamilyName] = useState("");
   const [country, setCountry] = useState("");
   const [complianceStatus, setComplianceStatus] = useState("green");
-  const [childName, setChildName] = useState("");
-  const [birthday, setBirthday] = useState("");
-  const [boneAge, setBoneAge] = useState("");
+  const [children, setChildren] = useState<Child[]>([
+    { name: "", birthday: "", boneAge: "" }
+  ]);
 
   useEffect(() => {
     if (open) {
       setFamilyName("");
       setCountry("");
       setComplianceStatus("green");
-      setChildName("");
-      setBirthday("");
-      setBoneAge("");
+      setChildren([{ name: "", birthday: "", boneAge: "" }]);
     }
   }, [open]);
 
+  const addChild = () => {
+    setChildren([...children, { name: "", birthday: "", boneAge: "" }]);
+  };
+
+  const removeChild = (index: number) => {
+    if (children.length > 1) {
+      setChildren(children.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateChild = (index: number, field: keyof Child, value: string) => {
+    const newChildren = [...children];
+    newChildren[index][field] = value;
+    setChildren(newChildren);
+  };
+
   const handleSave = () => {
-    if (familyName && country && childName && birthday) {
+    const allChildrenValid = children.every(child => child.name && child.birthday);
+    
+    if (familyName && country && allChildrenValid) {
       onSave?.({
         family: {
           familyName,
@@ -78,16 +102,17 @@ export default function AddFamilyWithChildDialog({
           managerId,
           complianceStatus,
         },
-        child: {
-          name: childName,
-          birthday,
-          boneAge: boneAge ? parseFloat(boneAge) : null,
-        },
+        children: children.map(child => ({
+          name: child.name,
+          birthday: child.birthday,
+          boneAge: child.boneAge ? parseFloat(child.boneAge) : null,
+        })),
       });
     }
   };
 
-  const isValid = familyName && country && childName && birthday;
+  const allChildrenValid = children.every(child => child.name && child.birthday);
+  const isValid = familyName && country && allChildrenValid;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -159,54 +184,90 @@ export default function AddFamilyWithChildDialog({
 
           <Separator />
 
-          {/* Child Section */}
+          {/* Children Section */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-sm">
-              {language === 'zh-TW' ? '孩童資料' : 'Child Information'}
-            </h3>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="child-name">
-                {language === 'zh-TW' ? '孩童姓名' : 'Child Name'} *
-              </Label>
-              <Input
-                id="child-name"
-                value={childName}
-                onChange={(e) => setChildName(e.target.value)}
-                placeholder={language === 'zh-TW' ? '例如：小明' : 'e.g., Ming'}
-                data-testid="input-child-name"
-              />
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">
+                {language === 'zh-TW' ? '孩童資料' : 'Children Information'}
+              </h3>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={addChild}
+                data-testid="button-add-child"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                {language === 'zh-TW' ? '新增孩童' : 'Add Child'}
+              </Button>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="birthday">
-                {language === 'zh-TW' ? '出生日期' : 'Birthday'} *
-              </Label>
-              <Input
-                id="birthday"
-                type="date"
-                value={birthday}
-                onChange={(e) => setBirthday(e.target.value)}
-                data-testid="input-birthday"
-              />
-            </div>
+            {children.map((child, index) => (
+              <Card key={index} data-testid={`card-child-${index}`}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">
+                      {language === 'zh-TW' ? `孩童 ${index + 1}` : `Child ${index + 1}`}
+                    </CardTitle>
+                    {children.length > 1 && (
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => removeChild(index)}
+                        data-testid={`button-remove-child-${index}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor={`child-name-${index}`}>
+                      {language === 'zh-TW' ? '孩童姓名' : 'Child Name'} *
+                    </Label>
+                    <Input
+                      id={`child-name-${index}`}
+                      value={child.name}
+                      onChange={(e) => updateChild(index, 'name', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：小明' : 'e.g., Ming'}
+                      data-testid={`input-child-name-${index}`}
+                    />
+                  </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="bone-age">
-                {language === 'zh-TW' ? '骨齡（歲）' : 'Bone Age (years)'}
-              </Label>
-              <Input
-                id="bone-age"
-                type="number"
-                step="0.1"
-                min="0"
-                max="30"
-                value={boneAge}
-                onChange={(e) => setBoneAge(e.target.value)}
-                placeholder={language === 'zh-TW' ? '例如：8.5（選填）' : 'e.g., 8.5 (optional)'}
-                data-testid="input-bone-age"
-              />
-            </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor={`birthday-${index}`}>
+                      {language === 'zh-TW' ? '出生日期' : 'Birthday'} *
+                    </Label>
+                    <Input
+                      id={`birthday-${index}`}
+                      type="date"
+                      value={child.birthday}
+                      onChange={(e) => updateChild(index, 'birthday', e.target.value)}
+                      data-testid={`input-birthday-${index}`}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor={`bone-age-${index}`}>
+                      {language === 'zh-TW' ? '骨齡（歲）' : 'Bone Age (years)'}
+                    </Label>
+                    <Input
+                      id={`bone-age-${index}`}
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      max="30"
+                      value={child.boneAge}
+                      onChange={(e) => updateChild(index, 'boneAge', e.target.value)}
+                      placeholder={language === 'zh-TW' ? '例如：8.5（選填）' : 'e.g., 8.5 (optional)'}
+                      data-testid={`input-bone-age-${index}`}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
         
