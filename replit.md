@@ -8,6 +8,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (November 18, 2025)
 
+**BONE AGE TRACKING FEATURE**
+- **Schema Update**: Added boneAge column (real type) to children table
+- **Manager Editing**: Created EditChildDialog component allowing managers to edit bone age (0-30 years)
+- **View-Only Access**: Boss and Supervisor can view bone age but cannot edit (no edit buttons)
+- **Display Logic**: Bone age column displays actual values including 0.0 (uses !== null && !== undefined checks), shows "-" for null
+- **Backend API**: PATCH /api/children/:id validates, parses, and persists bone age (Manager only, Boss/Supervisor blocked with 403)
+- **Storage Layer**: Updated getChildrenForManager() and getChildrenForSupervisor() to include boneAge in SELECT queries
+- **Bilingual Support**: Column header "骨齡 (歲)" / "Bone Age (years)"
+- **E2E Testing**: Verified Manager can edit, Boss/Supervisor can only view, 0.0 displays correctly
+
 **BOSS DASHBOARD PERFORMANCE CHART - WEIGHT REMOVAL**
 - **PerformanceChart Simplification**: Removed weight display from Boss Dashboard performance chart
 - **Chart Display**: Performance chart now shows only height bars (平均身高增長)

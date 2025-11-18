@@ -187,6 +187,7 @@ export class DatabaseStorage implements IStorage {
         name: children.name,
         birthday: children.birthday,
         familyId: children.familyId,
+        boneAge: children.boneAge,
       })
       .from(children)
       .innerJoin(families, eq(children.familyId, families.id))
@@ -201,6 +202,7 @@ export class DatabaseStorage implements IStorage {
         name: children.name,
         birthday: children.birthday,
         familyId: children.familyId,
+        boneAge: children.boneAge,
       })
       .from(children)
       .innerJoin(families, eq(children.familyId, families.id))
