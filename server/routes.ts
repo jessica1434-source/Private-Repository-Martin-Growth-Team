@@ -620,6 +620,65 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  app.patch('/api/children/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      // Boss and Supervisor have read-only access - cannot update children
+      if (manager.role === 'boss' || manager.role === 'supervisor') {
+        return res.status(403).json({ message: "Access denied: Read-only access to children" });
+      }
+      
+      const childId = req.params.id;
+      const { boneAge } = req.body;
+      
+      console.log(`[PATCH /api/children/:id] Request: childId=${childId}, boneAge=${boneAge}, type=${typeof boneAge}`);
+      
+      // Get child and verify ownership
+      const child = await storage.getChild(childId);
+      if (!child) {
+        console.log(`[PATCH /api/children/:id] Child not found: ${childId}`);
+        return res.status(404).json({ message: "Child not found" });
+      }
+      
+      // Get child's family to verify manager ownership
+      const family = await storage.getFamily(child.familyId);
+      if (!family) {
+        console.log(`[PATCH /api/children/:id] Family not found: ${child.familyId}`);
+        return res.status(404).json({ message: "Family not found" });
+      }
+      
+      // Only the family's manager can update the child
+      if (family.managerId !== manager.id) {
+        console.log(`[PATCH /api/children/:id] Access denied: manager=${manager.id}, family.manager=${family.managerId}`);
+        return res.status(403).json({ message: "Access denied: Can only update children in your own families" });
+      }
+      
+      // Validate and parse boneAge
+      let parsedBoneAge: number | null = null;
+      if (boneAge !== null && boneAge !== undefined && boneAge !== '') {
+        parsedBoneAge = parseFloat(boneAge);
+        console.log(`[PATCH /api/children/:id] Parsed boneAge: ${parsedBoneAge}`);
+        if (isNaN(parsedBoneAge) || parsedBoneAge < 0 || parsedBoneAge > 30) {
+          console.log(`[PATCH /api/children/:id] Invalid boneAge: ${parsedBoneAge}`);
+          return res.status(400).json({ message: "Bone age must be between 0 and 30 years" });
+        }
+      }
+      
+      console.log(`[PATCH /api/children/:id] Updating child with boneAge=${parsedBoneAge}`);
+      const updatedChild = await storage.updateChild(childId, { boneAge: parsedBoneAge });
+      console.log(`[PATCH /api/children/:id] Updated child:`, updatedChild);
+      res.json(updatedChild);
+    } catch (error) {
+      console.error("Error updating child:", error);
+      res.status(500).json({ message: "Failed to update child" });
+    }
+  });
+
   // Growth records routes
   app.get('/api/growth-records', isAuthenticated, async (req: any, res) => {
     try {
