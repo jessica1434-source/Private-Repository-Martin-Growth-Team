@@ -201,6 +201,7 @@ export default function ManagerDashboard({
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/families/manager', managerId] });
       queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/growth-records'] });
       const childCount = data.children.length;
       toast({
         title: language === 'zh-TW' ? '新增成功' : 'Successfully Added',

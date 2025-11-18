@@ -576,7 +576,7 @@ export function registerRoutes(app: Express): Server {
         return res.status(403).json({ message: "Access denied: Only supervisor and manager can create children" });
       }
       
-      const { name, birthday, familyId, boneAge } = req.body;
+      const { name, birthday, familyId, boneAge, height, weight } = req.body;
       
       // Validate required fields
       if (!name || !birthday || !familyId) {
@@ -607,6 +607,24 @@ export function registerRoutes(app: Express): Server {
         }
       }
       
+      // Parse and validate height if provided
+      let parsedHeight: number | null = null;
+      if (height !== null && height !== undefined && height !== '') {
+        parsedHeight = parseFloat(height);
+        if (isNaN(parsedHeight) || parsedHeight < 0 || parsedHeight > 300) {
+          return res.status(400).json({ message: "Height must be between 0 and 300 cm" });
+        }
+      }
+      
+      // Parse and validate weight if provided
+      let parsedWeight: number | null = null;
+      if (weight !== null && weight !== undefined && weight !== '') {
+        parsedWeight = parseFloat(weight);
+        if (isNaN(parsedWeight) || parsedWeight < 0 || parsedWeight > 200) {
+          return res.status(400).json({ message: "Weight must be between 0 and 200 kg" });
+        }
+      }
+      
       const childData = {
         name,
         birthday,
@@ -615,6 +633,19 @@ export function registerRoutes(app: Express): Server {
       };
       
       const child = await storage.createChild(childData);
+      
+      // Create initial growth record if both height and weight are provided
+      if (parsedHeight !== null && parsedWeight !== null) {
+        const growthRecordData = {
+          childId: child.id,
+          recordDate: birthday,
+          height: parsedHeight,
+          weight: parsedWeight,
+          notes: '',
+        };
+        await storage.createGrowthRecord(growthRecordData);
+      }
+      
       res.status(201).json(child);
     } catch (error) {
       console.error("Error creating child:", error);
