@@ -35,7 +35,6 @@ interface AddFamilyDialogProps {
     country: string;
     managerId: string;
     complianceStatus: string;
-    boneAge?: number | null;
   }) => void;
 }
 
@@ -51,7 +50,6 @@ export default function AddFamilyDialog({
   const [country, setCountry] = useState("");
   const [managerId, setManagerId] = useState("");
   const [complianceStatus, setComplianceStatus] = useState("green");
-  const [boneAge, setBoneAge] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -59,7 +57,6 @@ export default function AddFamilyDialog({
       setCountry("");
       setManagerId("");
       setComplianceStatus("green");
-      setBoneAge("");
     }
   }, [open]);
 
@@ -70,7 +67,6 @@ export default function AddFamilyDialog({
         country,
         managerId,
         complianceStatus,
-        boneAge: boneAge ? parseFloat(boneAge) : null,
       });
       onOpenChange(false);
     }
@@ -152,21 +148,6 @@ export default function AddFamilyDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="add-bone-age">
-              {language === 'zh-TW' ? '骨齡（歲）' : 'Bone Age (years)'}
-            </Label>
-            <Input
-              id="add-bone-age"
-              type="number"
-              step="0.1"
-              value={boneAge}
-              onChange={(e) => setBoneAge(e.target.value)}
-              placeholder={language === 'zh-TW' ? '例如：8.5（選填）' : 'e.g., 8.5 (optional)'}
-              data-testid="input-add-bone-age"
-            />
           </div>
         </div>
         <DialogFooter>

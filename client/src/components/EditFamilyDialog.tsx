@@ -36,7 +36,6 @@ interface EditFamilyDialogProps {
   currentCountry: string;
   currentManagerId: string;
   currentComplianceStatus: string;
-  currentBoneAge?: number | null;
   currentManagerNotes?: string | null;
   currentRole?: string;
   onSave?: (data: {
@@ -45,7 +44,6 @@ interface EditFamilyDialogProps {
     country: string;
     managerId: string;
     complianceStatus?: string;
-    boneAge?: number | null;
     managerNotes?: string | null;
   }) => void;
 }
@@ -60,7 +58,6 @@ export default function EditFamilyDialog({
   currentCountry,
   currentManagerId,
   currentComplianceStatus,
-  currentBoneAge,
   currentManagerNotes,
   currentRole = 'manager',
   onSave,
@@ -70,7 +67,6 @@ export default function EditFamilyDialog({
   const [country, setCountry] = useState(currentCountry);
   const [managerId, setManagerId] = useState(currentManagerId);
   const [complianceStatus, setComplianceStatus] = useState(currentComplianceStatus);
-  const [boneAge, setBoneAge] = useState(currentBoneAge?.toString() || '');
   const [managerNotes, setManagerNotes] = useState(currentManagerNotes || '');
 
   const isSupervisor = currentRole === 'supervisor';
@@ -81,10 +77,9 @@ export default function EditFamilyDialog({
       setCountry(currentCountry);
       setManagerId(currentManagerId);
       setComplianceStatus(currentComplianceStatus);
-      setBoneAge(currentBoneAge?.toString() || '');
       setManagerNotes(currentManagerNotes || '');
     }
-  }, [open, currentFamilyName, currentCountry, currentManagerId, currentComplianceStatus, currentBoneAge, currentManagerNotes]);
+  }, [open, currentFamilyName, currentCountry, currentManagerId, currentComplianceStatus, currentManagerNotes]);
 
   const handleSave = () => {
     if (isSupervisor) {
@@ -100,7 +95,6 @@ export default function EditFamilyDialog({
         familyName,
         country,
         managerId,
-        boneAge: boneAge ? parseFloat(boneAge) : null,
         complianceStatus,
         managerNotes: managerNotes || null,
       };
@@ -201,22 +195,6 @@ export default function EditFamilyDialog({
               placeholder={language === 'zh-TW' ? '記錄執行狀況和注意事項' : 'Record execution status and notes'}
               data-testid="textarea-edit-manager-notes"
               rows={3}
-              disabled={isSupervisor}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit-bone-age">
-              {language === 'zh-TW' ? '骨齡（歲）' : 'Bone Age (years)'}
-            </Label>
-            <Input
-              id="edit-bone-age"
-              type="number"
-              step="0.1"
-              value={boneAge}
-              onChange={(e) => setBoneAge(e.target.value)}
-              placeholder={language === 'zh-TW' ? '例如：8.5' : 'e.g., 8.5'}
-              data-testid="input-edit-bone-age"
               disabled={isSupervisor}
             />
           </div>

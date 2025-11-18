@@ -143,7 +143,7 @@ export default function ManagerDashboard({
   });
 
   const updateFamilyMutation = useMutation({
-    mutationFn: async (data: { id: string; familyName: string; country: string; boneAge?: number; complianceStatus?: string; managerNotes?: string }) => {
+    mutationFn: async (data: { id: string; familyName: string; country: string; complianceStatus?: string; managerNotes?: string }) => {
       const { id, ...updateData } = data;
       return await apiRequest('PATCH', `/api/families/${id}`, updateData);
     },
@@ -437,7 +437,6 @@ export default function ManagerDashboard({
           currentCountry={selectedFamily.country}
           currentManagerId={selectedFamily.managerId || managerId}
           currentComplianceStatus={selectedFamily.complianceStatus}
-          currentBoneAge={selectedFamily.boneAge}
           currentManagerNotes={selectedFamily.managerNotes}
           currentRole="manager"
           onSave={(data) => {
@@ -445,7 +444,6 @@ export default function ManagerDashboard({
               id: data.familyId,
               familyName: data.familyName,
               country: data.country,
-              boneAge: data.boneAge ?? undefined,
               complianceStatus: data.complianceStatus,
               managerNotes: data.managerNotes ?? undefined,
             });
