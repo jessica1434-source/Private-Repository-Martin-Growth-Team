@@ -29,7 +29,7 @@ export default function StatusBadge({ status, language, showLabel = true }: Stat
     },
   };
 
-  const config = statusConfig[status];
+  const config = statusConfig[status] || statusConfig.green;
 
   if (!showLabel) {
     return <div className={`w-3 h-3 rounded-full ${config.color} shadow-sm`} data-testid={`status-indicator-${status}`} />;
