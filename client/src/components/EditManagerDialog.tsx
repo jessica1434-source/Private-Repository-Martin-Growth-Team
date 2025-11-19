@@ -10,8 +10,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
+import type { Manager } from "@shared/schema";
 
 interface EditManagerDialogProps {
   open: boolean;
@@ -19,7 +27,10 @@ interface EditManagerDialogProps {
   language: Language;
   currentName: string;
   currentEmail?: string;
-  onSave?: (data: { name: string }) => void;
+  currentRole: string;
+  currentSupervisorId?: string | null;
+  supervisorOptions?: Manager[];
+  onSave?: (data: { name: string; role: string; supervisorId?: string | null }) => void;
 }
 
 export default function EditManagerDialog({
@@ -28,20 +39,31 @@ export default function EditManagerDialog({
   language,
   currentName,
   currentEmail = '',
+  currentRole,
+  currentSupervisorId,
+  supervisorOptions = [],
   onSave,
 }: EditManagerDialogProps) {
   const t = useTranslation(language);
   const [name, setName] = useState(currentName);
+  const [role, setRole] = useState(currentRole);
+  const [supervisorId, setSupervisorId] = useState<string | null>(currentSupervisorId || null);
 
   useEffect(() => {
     if (open) {
       setName(currentName);
+      setRole(currentRole);
+      setSupervisorId(currentSupervisorId || null);
     }
-  }, [open, currentName]);
+  }, [open, currentName, currentRole, currentSupervisorId]);
 
   const handleSave = () => {
-    if (name) {
-      onSave?.({ name });
+    if (name && role) {
+      onSave?.({ 
+        name, 
+        role,
+        supervisorId: (role === 'manager' || role === 'supervisor') ? supervisorId : null
+      });
       onOpenChange(false);
     }
   };
@@ -70,12 +92,64 @@ export default function EditManagerDialog({
               data-testid="input-edit-manager-name"
             />
           </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit-manager-role">
+              {language === 'zh-TW' ? '角色' : 'Role'}
+            </Label>
+            <Select value={role} onValueChange={setRole}>
+              <SelectTrigger id="edit-manager-role" data-testid="select-edit-manager-role">
+                <SelectValue placeholder={language === 'zh-TW' ? '選擇角色' : 'Select role'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="manager" data-testid="role-option-manager">
+                  {language === 'zh-TW' ? '管理師' : 'Manager'}
+                </SelectItem>
+                <SelectItem value="supervisor" data-testid="role-option-supervisor">
+                  {language === 'zh-TW' ? '主任管理師' : 'Supervisor'}
+                </SelectItem>
+                <SelectItem value="boss" data-testid="role-option-boss">
+                  {language === 'zh-TW' ? '老闆' : 'Boss'}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(role === 'manager' || role === 'supervisor') && (
+            <div className="grid gap-2">
+              <Label htmlFor="edit-manager-supervisor">
+                {language === 'zh-TW' ? '上級主管' : 'Supervisor'}
+              </Label>
+              <Select 
+                value={supervisorId || 'none'} 
+                onValueChange={(value) => setSupervisorId(value === 'none' ? null : value)}
+              >
+                <SelectTrigger id="edit-manager-supervisor" data-testid="select-edit-manager-supervisor">
+                  <SelectValue placeholder={language === 'zh-TW' ? '選擇上級主管（可選）' : 'Select supervisor (optional)'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" data-testid="supervisor-option-none">
+                    {language === 'zh-TW' ? '無上級主管' : 'No supervisor'}
+                  </SelectItem>
+                  {supervisorOptions.map((supervisor) => (
+                    <SelectItem 
+                      key={supervisor.id} 
+                      value={supervisor.id}
+                      data-testid={`supervisor-option-${supervisor.id}`}
+                    >
+                      {supervisor.name} ({supervisor.username})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel">
             {t.cancel}
           </Button>
-          <Button onClick={handleSave} disabled={!name} data-testid="button-save">
+          <Button onClick={handleSave} disabled={!name || !role} data-testid="button-save">
             {t.save}
           </Button>
         </DialogFooter>
