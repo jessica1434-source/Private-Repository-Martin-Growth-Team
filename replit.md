@@ -6,6 +6,41 @@ A bilingual (Traditional Chinese/English) dashboard system designed for tracking
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (November 19, 2025)
+
+**DELETE FUNCTIONALITY FOR FAMILIES AND CHILDREN**
+- **ManagerDashboard Implementation**: Added complete delete functionality with AlertDialog confirmation
+  - Delete buttons for families (Trash2 icon in family status cards)
+  - Delete buttons for children (via ChildrenTable onDelete handler)
+  - Bilingual confirmation dialogs with cascade warnings
+  - Family deletion warning: "刪除家庭將一併刪除所有相關的孩童與成長記錄"
+  - Child deletion warning: "刪除孩童將一併刪除所有相關的成長記錄"
+- **SupervisorDashboard Implementation**: Identical delete functionality for supervisor role
+  - Delete handlers passed to FamilyTable and ChildrenTable
+  - Data correctly scoped to subordinate families and children only
+  - Proper query invalidation for supervisor context
+- **Delete Mutations**: Implemented deleteFamilyMutation and deleteChildMutation
+  - DELETE /api/families/:id invalidates /api/families and /api/children queries
+  - DELETE /api/children/:id invalidates /api/children and /api/growth-records queries
+  - Success toast notifications in both languages
+  - Error handling with toast messages
+- **BossDashboard Verification**: Confirmed view-only access maintained
+  - No delete buttons or handlers present
+  - Only onView and onViewHistory props passed to tables
+- **Backend Authorization**: DELETE routes already enforce role-based access
+  - Manager can delete own families/children
+  - Supervisor can delete subordinate families/children
+  - Boss blocked from DELETE operations (403 Forbidden)
+- **E2E Testing**: Comprehensive test coverage confirmed
+  - Child deletion: DELETE returns 200, UI updates correctly
+  - Family deletion: DELETE returns 200, UI removes family card
+  - Cancel flow: Dialog closes without deletion
+  - Confirm flow: Deletion executes and data removed from UI
+- **User Experience**: Two-step confirmation process prevents accidental deletions
+  - Click delete → confirmation dialog opens
+  - Click cancel → dialog closes, no changes
+  - Click confirm → deletion executes, success toast, UI updates
+
 ## Recent Changes (November 18, 2025)
 
 **INITIAL HEIGHT/WEIGHT INPUT DURING CHILD CREATION**
