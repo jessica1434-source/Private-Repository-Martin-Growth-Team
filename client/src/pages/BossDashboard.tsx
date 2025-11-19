@@ -165,8 +165,12 @@ export default function BossDashboard({
   };
 
   const editManagerMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string }) => {
-      return await apiRequest('PATCH', `/api/managers/${data.id}`, { name: data.name });
+    mutationFn: async (data: { id: string; name: string; role: string; supervisorId?: string | null }) => {
+      return await apiRequest('PATCH', `/api/managers/${data.id}`, { 
+        name: data.name,
+        role: data.role,
+        supervisorId: data.supervisorId
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
@@ -226,9 +230,14 @@ export default function BossDashboard({
     deleteManagerMutation.mutate(deleteTarget.id);
   };
 
-  const handleSaveManager = (data: { name: string }) => {
+  const handleSaveManager = (data: { name: string; role: string; supervisorId?: string | null }) => {
     if (selectedManagerId) {
-      editManagerMutation.mutate({ id: selectedManagerId, name: data.name });
+      editManagerMutation.mutate({ 
+        id: selectedManagerId, 
+        name: data.name,
+        role: data.role,
+        supervisorId: data.supervisorId
+      });
     }
   };
 
@@ -511,6 +520,9 @@ export default function BossDashboard({
 
       {selectedManagerId && (() => {
         const selectedManager = managers.find(m => m.id === selectedManagerId);
+        const supervisorOptions = managers.filter(m => 
+          (m.role === 'boss' || m.role === 'supervisor') && m.id !== selectedManagerId
+        );
         return selectedManager ? (
           <EditManagerDialog
             open={editManagerDialogOpen}
@@ -518,6 +530,9 @@ export default function BossDashboard({
             language={language}
             currentName={selectedManager.name}
             currentEmail={selectedManager.username}
+            currentRole={selectedManager.role}
+            currentSupervisorId={selectedManager.supervisorId}
+            supervisorOptions={supervisorOptions}
             onSave={handleSaveManager}
           />
         ) : null;
