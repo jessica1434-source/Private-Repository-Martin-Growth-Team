@@ -27,10 +27,10 @@ interface EditManagerDialogProps {
   language: Language;
   currentName: string;
   currentEmail?: string;
-  currentRole: string;
-  currentSupervisorId?: string | null;
+  currentRole: Manager['role'];
+  currentSupervisorId?: Manager['supervisorId'];
   supervisorOptions?: Manager[];
-  onSave?: (data: { name: string; role: string; supervisorId?: string | null }) => void;
+  onSave?: (data: { name: string; role: Manager['role']; supervisorId?: Manager['supervisorId'] }) => void;
 }
 
 export default function EditManagerDialog({
@@ -46,8 +46,8 @@ export default function EditManagerDialog({
 }: EditManagerDialogProps) {
   const t = useTranslation(language);
   const [name, setName] = useState(currentName);
-  const [role, setRole] = useState(currentRole);
-  const [supervisorId, setSupervisorId] = useState<string | null>(currentSupervisorId || null);
+  const [role, setRole] = useState<Manager['role']>(currentRole);
+  const [supervisorId, setSupervisorId] = useState<Manager['supervisorId']>(currentSupervisorId || null);
 
   useEffect(() => {
     if (open) {
@@ -97,7 +97,7 @@ export default function EditManagerDialog({
             <Label htmlFor="edit-manager-role">
               {language === 'zh-TW' ? '角色' : 'Role'}
             </Label>
-            <Select value={role} onValueChange={setRole}>
+            <Select value={role} onValueChange={(value) => setRole(value as Manager['role'])}>
               <SelectTrigger id="edit-manager-role" data-testid="select-edit-manager-role">
                 <SelectValue placeholder={language === 'zh-TW' ? '選擇角色' : 'Select role'} />
               </SelectTrigger>
@@ -122,7 +122,7 @@ export default function EditManagerDialog({
               </Label>
               <Select 
                 value={supervisorId || 'none'} 
-                onValueChange={(value) => setSupervisorId(value === 'none' ? null : value)}
+                onValueChange={(value) => setSupervisorId(value === 'none' ? null : value as string)}
               >
                 <SelectTrigger id="edit-manager-supervisor" data-testid="select-edit-manager-supervisor">
                   <SelectValue placeholder={language === 'zh-TW' ? '選擇上級主管（可選）' : 'Select supervisor (optional)'} />

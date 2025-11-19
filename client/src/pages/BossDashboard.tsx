@@ -165,7 +165,7 @@ export default function BossDashboard({
   };
 
   const editManagerMutation = useMutation({
-    mutationFn: async (data: { id: string; name: string; role: string; supervisorId?: string | null }) => {
+    mutationFn: async (data: { id: string; name: string; role: Manager['role']; supervisorId?: Manager['supervisorId'] }) => {
       return await apiRequest('PATCH', `/api/managers/${data.id}`, { 
         name: data.name,
         role: data.role,
@@ -230,7 +230,7 @@ export default function BossDashboard({
     deleteManagerMutation.mutate(deleteTarget.id);
   };
 
-  const handleSaveManager = (data: { name: string; role: string; supervisorId?: string | null }) => {
+  const handleSaveManager = (data: { name: string; role: Manager['role']; supervisorId?: Manager['supervisorId'] }) => {
     if (selectedManagerId) {
       editManagerMutation.mutate({ 
         id: selectedManagerId, 
@@ -520,6 +520,7 @@ export default function BossDashboard({
 
       {selectedManagerId && (() => {
         const selectedManager = managers.find(m => m.id === selectedManagerId);
+        // Filter to only boss and supervisor roles, excluding the manager being edited
         const supervisorOptions = managers.filter(m => 
           (m.role === 'boss' || m.role === 'supervisor') && m.id !== selectedManagerId
         );
