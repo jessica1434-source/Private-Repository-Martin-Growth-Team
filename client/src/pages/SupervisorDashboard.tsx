@@ -1,20 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
 import BirthdayCard from "@/components/BirthdayCard";
@@ -25,8 +15,6 @@ import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -47,12 +35,9 @@ export default function SupervisorDashboard({
   onLogout
 }: SupervisorDashboardProps) {
   const t = useTranslation(language);
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [growthHistoryDialogOpen, setGrowthHistoryDialogOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{type: 'family' | 'child'; id: string; name: string} | null>(null);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
@@ -169,66 +154,6 @@ export default function SupervisorDashboard({
   const handleViewHistory = (childId: string) => {
     setSelectedChildId(childId);
     setGrowthHistoryDialogOpen(true);
-  };
-
-  const deleteFamilyMutation = useMutation({
-    mutationFn: async (familyId: string) => {
-      return await apiRequest('DELETE', `/api/families/${familyId}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
-      toast({
-        title: language === 'zh-TW' ? '刪除成功' : 'Family Deleted',
-        description: language === 'zh-TW' ? '家庭已刪除' : 'Family has been deleted successfully',
-      });
-      setDeleteConfirmOpen(false);
-      setDeleteTarget(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
-        description: language === 'zh-TW' ? '無法刪除家庭' : 'Failed to delete family',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteChildMutation = useMutation({
-    mutationFn: async (childId: string) => {
-      return await apiRequest('DELETE', `/api/children/${childId}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/growth-records'] });
-      toast({
-        title: language === 'zh-TW' ? '刪除成功' : 'Child Deleted',
-        description: language === 'zh-TW' ? '孩童已刪除' : 'Child has been deleted successfully',
-      });
-      setDeleteConfirmOpen(false);
-      setDeleteTarget(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
-        description: language === 'zh-TW' ? '無法刪除孩童' : 'Failed to delete child',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleDeleteClick = (type: 'family' | 'child', id: string, name: string) => {
-    setDeleteTarget({ type, id, name });
-    setDeleteConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!deleteTarget) return;
-    if (deleteTarget.type === 'family') {
-      deleteFamilyMutation.mutate(deleteTarget.id);
-    } else {
-      deleteChildMutation.mutate(deleteTarget.id);
-    }
   };
 
   const selectedFamily = allFamilies.find(f => f.id === selectedFamilyId);
@@ -443,12 +368,6 @@ export default function SupervisorDashboard({
                     families={familyTableData}
                     language={language}
                     onView={handleViewFamily}
-                    onDelete={(familyId) => {
-                      const family = subordinateFamilies.find(f => f.id === familyId);
-                      if (family) {
-                        handleDeleteClick('family', familyId, family.familyName);
-                      }
-                    }}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -472,12 +391,6 @@ export default function SupervisorDashboard({
                     children={childrenTableData}
                     language={language}
                     onViewHistory={handleViewHistory}
-                    onDelete={(childId) => {
-                      const child = subordinateChildren.find(c => c.id === childId);
-                      if (child) {
-                        handleDeleteClick('child', childId, child.name);
-                      }
-                    }}
                   />
                 ) : (
                   <p className="text-muted-foreground text-center py-8">
@@ -518,47 +431,6 @@ export default function SupervisorDashboard({
           />
         ) : null;
       })()}
-
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent data-testid="dialog-delete-confirm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {language === 'zh-TW' ? '確認刪除' : 'Confirm Deletion'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {language === 'zh-TW' 
-                ? `確定要刪除「${deleteTarget?.name}」嗎？此操作無法復原。`
-                : `Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
-              {deleteTarget?.type === 'family' && (
-                <p className="mt-2 font-semibold text-destructive">
-                  {language === 'zh-TW' 
-                    ? '注意：刪除家庭將一併刪除所有相關的孩童與成長記錄。'
-                    : 'Warning: Deleting this family will also delete all associated children and growth records.'}
-                </p>
-              )}
-              {deleteTarget?.type === 'child' && (
-                <p className="mt-2 font-semibold text-destructive">
-                  {language === 'zh-TW' 
-                    ? '注意：刪除孩童將一併刪除所有相關的成長記錄。'
-                    : 'Warning: Deleting this child will also delete all associated growth records.'}
-                </p>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">
-              {language === 'zh-TW' ? '取消' : 'Cancel'}
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
-            >
-              {language === 'zh-TW' ? '刪除' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
