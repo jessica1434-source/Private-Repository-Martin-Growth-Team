@@ -30,9 +30,10 @@ interface FamilyTableProps {
   onView?: (familyId: string) => void;
   onEdit?: (familyId: string) => void;
   onDelete?: (familyId: string) => void;
+  hideActions?: boolean;
 }
 
-export default function FamilyTable({ families, language, onView, onEdit, onDelete }: FamilyTableProps) {
+export default function FamilyTable({ families, language, onView, onEdit, onDelete, hideActions }: FamilyTableProps) {
   const t = useTranslation(language);
 
   const getRoleText = (role?: string) => {
@@ -56,7 +57,7 @@ export default function FamilyTable({ families, language, onView, onEdit, onDele
             <TableHead>{t.managerName}</TableHead>
             <TableHead>{t.totalChildren}</TableHead>
             <TableHead>{t.status}</TableHead>
-            <TableHead className="text-right">{t.actions}</TableHead>
+            {!hideActions && <TableHead className="text-right">{t.actions}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -83,40 +84,42 @@ export default function FamilyTable({ families, language, onView, onEdit, onDele
               <TableCell>
                 <StatusBadge status={family.complianceStatus} language={language} />
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  {onView && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onView(family.id)}
-                      data-testid={`button-view-${family.id}`}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onEdit && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onEdit(family.id)}
-                      data-testid={`button-edit-${family.id}`}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onDelete(family.id)}
-                      data-testid={`button-delete-${family.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
+              {!hideActions && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    {onView && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onView(family.id)}
+                        data-testid={`button-view-${family.id}`}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onEdit && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onEdit(family.id)}
+                        data-testid={`button-edit-${family.id}`}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onDelete(family.id)}
+                        data-testid={`button-delete-${family.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

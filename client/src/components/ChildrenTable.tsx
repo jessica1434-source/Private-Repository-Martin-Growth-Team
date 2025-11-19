@@ -30,9 +30,10 @@ interface ChildrenTableProps {
   onViewHistory?: (childId: string) => void;
   onDelete?: (childId: string) => void;
   onEdit?: (childId: string) => void;
+  hideActions?: boolean;
 }
 
-export default function ChildrenTable({ children, language, onAddRecord, onViewHistory, onDelete, onEdit }: ChildrenTableProps) {
+export default function ChildrenTable({ children, language, onAddRecord, onViewHistory, onDelete, onEdit, hideActions }: ChildrenTableProps) {
   const t = useTranslation(language);
 
   const calculateAge = (birthday: string) => {
@@ -58,7 +59,7 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
             <TableHead>{t.height} ({t.cm})</TableHead>
             <TableHead>{t.weight} ({t.kg})</TableHead>
             <TableHead>{t.lastRecord}</TableHead>
-            <TableHead className="text-right">{t.actions}</TableHead>
+            {!hideActions && <TableHead className="text-right">{t.actions}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -79,50 +80,52 @@ export default function ChildrenTable({ children, language, onAddRecord, onViewH
               <TableCell className="text-sm text-muted-foreground">
                 {child.lastRecordDate ? format(new Date(child.lastRecordDate), 'yyyy/MM/dd') : '-'}
               </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  {onViewHistory && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onViewHistory(child.id)}
-                      data-testid={`button-history-${child.id}`}
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onAddRecord && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onAddRecord(child.id)}
-                      data-testid={`button-add-record-${child.id}`}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onEdit && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onEdit(child.id)}
-                      data-testid={`button-edit-${child.id}`}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => onDelete(child.id)}
-                      data-testid={`button-delete-${child.id}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
+              {!hideActions && (
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-2">
+                    {onViewHistory && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onViewHistory(child.id)}
+                        data-testid={`button-history-${child.id}`}
+                      >
+                        <TrendingUp className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onAddRecord && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onAddRecord(child.id)}
+                        data-testid={`button-add-record-${child.id}`}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onEdit && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onEdit(child.id)}
+                        data-testid={`button-edit-${child.id}`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {onDelete && (
+                      <Button 
+                        variant="outline" 
+                        size="icon"
+                        onClick={() => onDelete(child.id)}
+                        data-testid={`button-delete-${child.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>
