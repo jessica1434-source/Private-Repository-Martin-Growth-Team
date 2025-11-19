@@ -1001,17 +1001,15 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "Cannot delete yourself / 無法刪除自己" });
       }
       
-      // Before deleting, reassign all subordinate managers to null supervisor
-      // This prevents foreign key constraint violations
-      const allManagers = await storage.getAllManagers();
-      const subordinates = allManagers.filter(m => m.supervisorId === managerId);
-      
-      for (const subordinate of subordinates) {
-        await storage.updateManager(subordinate.id, {
-          supervisorId: null,
+      // Check if manager has families assigned
+      const families = await storage.getFamiliesByManager(managerId);
+      if (families.length > 0) {
+        return res.status(400).json({ 
+          message: `Cannot delete manager with ${families.length} assigned families. Please delete or reassign families first. / 無法刪除有 ${families.length} 個家庭的管理師。請先刪除或重新分配家庭。` 
         });
       }
       
+      // Database will automatically set subordinate managers' supervisorId to null
       await storage.deleteManager(managerId);
       res.json({ success: true, message: "Manager deleted successfully / 管理員已成功刪除" });
     } catch (error) {

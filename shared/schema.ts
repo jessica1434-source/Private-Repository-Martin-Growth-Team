@@ -31,7 +31,7 @@ export const managers = pgTable("managers", {
   passwordHash: text("password_hash").notNull(),
   name: text("name").notNull(),
   role: text("role").notNull().default('manager'),
-  supervisorId: varchar("supervisor_id").references((): any => managers.id),
+  supervisorId: varchar("supervisor_id").references((): any => managers.id, { onDelete: 'set null' }),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -40,7 +40,7 @@ export const families = pgTable("families", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   familyName: text("family_name").notNull(),
   country: text("country").notNull(),
-  managerId: varchar("manager_id").references(() => managers.id),
+  managerId: varchar("manager_id").references(() => managers.id, { onDelete: 'restrict' }),
   complianceStatus: text("compliance_status").notNull().default('green'),
   managerNotes: text("manager_notes"),
 });
@@ -49,13 +49,13 @@ export const children = pgTable("children", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   birthday: date("birthday").notNull(),
-  familyId: varchar("family_id").notNull().references(() => families.id),
+  familyId: varchar("family_id").notNull().references(() => families.id, { onDelete: 'cascade' }),
   boneAge: real("bone_age"),
 });
 
 export const growthRecords = pgTable("growth_records", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  childId: varchar("child_id").notNull().references(() => children.id),
+  childId: varchar("child_id").notNull().references(() => children.id, { onDelete: 'cascade' }),
   recordDate: date("record_date").notNull(),
   height: real("height").notNull(),
   weight: real("weight").notNull(),
