@@ -30,6 +30,7 @@ interface EditManagerDialogProps {
   currentRole: Manager['role'];
   currentSupervisorId?: Manager['supervisorId'];
   supervisorOptions?: Manager[];
+  isSelf?: boolean;
   onSave?: (data: { name: string; role: Manager['role']; supervisorId?: Manager['supervisorId'] }) => void;
 }
 
@@ -42,6 +43,7 @@ export default function EditManagerDialog({
   currentRole,
   currentSupervisorId,
   supervisorOptions = [],
+  isSelf = false,
   onSave,
 }: EditManagerDialogProps) {
   const t = useTranslation(language);
@@ -97,7 +99,11 @@ export default function EditManagerDialog({
             <Label htmlFor="edit-manager-role">
               {language === 'zh-TW' ? '角色' : 'Role'}
             </Label>
-            <Select value={role} onValueChange={(value) => setRole(value as Manager['role'])}>
+            <Select 
+              value={role} 
+              onValueChange={(value) => setRole(value as Manager['role'])}
+              disabled={isSelf}
+            >
               <SelectTrigger id="edit-manager-role" data-testid="select-edit-manager-role">
                 <SelectValue placeholder={language === 'zh-TW' ? '選擇角色' : 'Select role'} />
               </SelectTrigger>
@@ -113,6 +119,13 @@ export default function EditManagerDialog({
                 </SelectItem>
               </SelectContent>
             </Select>
+            {isSelf && (
+              <p className="text-sm text-muted-foreground">
+                {language === 'zh-TW' 
+                  ? '無法更改自己的角色以確保系統至少保留一位老闆。' 
+                  : 'Cannot change your own role to ensure system has at least one boss.'}
+              </p>
+            )}
           </div>
 
           {(role === 'manager' || role === 'supervisor') && (

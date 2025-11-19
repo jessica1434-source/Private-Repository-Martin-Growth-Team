@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,7 @@ export default function BossDashboard({
 }: BossDashboardProps) {
   const t = useTranslation(language);
   const { toast } = useToast();
+  const { manager: currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -524,6 +526,7 @@ export default function BossDashboard({
         const supervisorOptions = managers.filter(m => 
           (m.role === 'boss' || m.role === 'supervisor') && m.id !== selectedManagerId
         );
+        const isSelf = currentUser?.id === selectedManagerId;
         return selectedManager ? (
           <EditManagerDialog
             open={editManagerDialogOpen}
@@ -534,6 +537,7 @@ export default function BossDashboard({
             currentRole={selectedManager.role}
             currentSupervisorId={selectedManager.supervisorId}
             supervisorOptions={supervisorOptions}
+            isSelf={isSelf}
             onSave={handleSaveManager}
           />
         ) : null;
