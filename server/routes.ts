@@ -261,13 +261,17 @@ export function registerRoutes(app: Express): Server {
         if (targetManagerId !== currentManager.id) {
           return res.status(403).json({ message: "Access denied: Managers can only edit themselves / 無權限：經理只能編輯自己" });
         }
+        
+        // Block any attempt to change role or supervisorId (including null/undefined values)
+        if ('role' in req.body) {
+          return res.status(403).json({ message: "Access denied: Managers cannot change role / 無權限：經理不能更改角色" });
+        }
+        if ('supervisorId' in req.body) {
+          return res.status(403).json({ message: "Access denied: Managers cannot change supervisor / 無權限：經理不能更改主管" });
+        }
+        
         // Managers can ONLY update their name
         if (req.body.name) updateData.name = req.body.name;
-        
-        // Block any attempt to change role or supervisorId
-        if (req.body.role || req.body.supervisorId !== undefined) {
-          return res.status(403).json({ message: "Access denied: Managers cannot change role or supervisor / 無權限：經理不能更改角色或主管" });
-        }
       }
       
       // Supervisor can only edit direct subordinate managers, and CANNOT change roles or supervisorId
@@ -275,13 +279,17 @@ export function registerRoutes(app: Express): Server {
         if (targetManager.supervisorId !== currentManager.id) {
           return res.status(403).json({ message: "Access denied: Supervisors can only edit their direct subordinates / 無權限：主管只能編輯直屬下屬" });
         }
+        
+        // Block any attempt to change role or supervisorId (including null/undefined values)
+        if ('role' in req.body) {
+          return res.status(403).json({ message: "Access denied: Supervisors cannot change roles / 無權限：主管不能更改角色" });
+        }
+        if ('supervisorId' in req.body) {
+          return res.status(403).json({ message: "Access denied: Supervisors cannot reassign managers / 無權限：主管不能重新分配管理員" });
+        }
+        
         // Supervisors can ONLY update name
         if (req.body.name) updateData.name = req.body.name;
-        
-        // Block any attempt to change role or supervisorId
-        if (req.body.role || req.body.supervisorId !== undefined) {
-          return res.status(403).json({ message: "Access denied: Supervisors cannot change roles or reassign managers / 無權限：主管不能更改角色或重新分配管理員" });
-        }
       }
       
       // Boss can edit any manager and change role/supervisorId
