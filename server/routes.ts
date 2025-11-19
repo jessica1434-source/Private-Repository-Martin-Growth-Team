@@ -1003,21 +1003,16 @@ export function registerRoutes(app: Express): Server {
       
       // Before deleting, reassign all subordinate managers to null supervisor
       // This prevents foreign key constraint violations
-      console.log(`[DELETE Manager] Deleting manager: ${managerId}`);
       const allManagers = await storage.getAllManagers();
       const subordinates = allManagers.filter(m => m.supervisorId === managerId);
-      console.log(`[DELETE Manager] Found ${subordinates.length} subordinates`);
       
       for (const subordinate of subordinates) {
-        console.log(`[DELETE Manager] Updating subordinate: ${subordinate.id}, setting supervisorId to null`);
         await storage.updateManager(subordinate.id, {
           supervisorId: null,
         });
       }
       
-      console.log(`[DELETE Manager] Now deleting manager: ${managerId}`);
       await storage.deleteManager(managerId);
-      console.log(`[DELETE Manager] Manager deleted successfully`);
       res.json({ success: true, message: "Manager deleted successfully / 管理員已成功刪除" });
     } catch (error) {
       console.error("Error deleting manager:", error);
