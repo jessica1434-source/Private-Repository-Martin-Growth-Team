@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
 import TrendChart from "@/components/TrendChart";
@@ -14,8 +24,11 @@ import ManagerTable from "@/components/ManagerTable";
 import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
+import EditManagerDialog from "@/components/EditManagerDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -34,11 +47,16 @@ export default function BossDashboard({
   onLogout
 }: BossDashboardProps) {
   const t = useTranslation(language);
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
   const [selectedChildId, setSelectedChildId] = useState<string>('');
+  const [editManagerDialogOpen, setEditManagerDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; familiesCount: number } | null>(null);
 
   const { data: managers = [], isLoading: managersLoading } = useQuery<Manager[]>({
     queryKey: ['/api/managers'],
@@ -144,6 +162,74 @@ export default function BossDashboard({
   const handleViewHistory = (childId: string) => {
     setSelectedChildId(childId);
     setHistoryDialogOpen(true);
+  };
+
+  const editManagerMutation = useMutation({
+    mutationFn: async (data: { id: string; name: string }) => {
+      return await apiRequest('PATCH', `/api/managers/${data.id}`, { name: data.name });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
+      toast({
+        title: language === 'zh-TW' ? '更新成功' : 'Manager Updated',
+        description: language === 'zh-TW' ? '管理師資料已更新' : 'Manager information has been updated successfully',
+      });
+      setEditManagerDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
+        description: language === 'zh-TW' ? '無法更新管理師資料' : 'Failed to update manager information',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const deleteManagerMutation = useMutation({
+    mutationFn: async (managerId: string) => {
+      return await apiRequest('DELETE', `/api/managers/${managerId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Manager Deleted',
+        description: language === 'zh-TW' ? '管理師已刪除' : 'Manager has been deleted successfully',
+      });
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    },
+    onError: (error: any) => {
+      const errorMessage = error.message || (language === 'zh-TW' ? '無法刪除管理師' : 'Failed to delete manager');
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleEditManager = (managerId: string) => {
+    setSelectedManagerId(managerId);
+    setEditManagerDialogOpen(true);
+  };
+
+  const handleDeleteClick = (managerId: string) => {
+    const manager = managerTableData.find(m => m.id === managerId);
+    if (manager) {
+      setDeleteTarget({ id: managerId, name: manager.name, familiesCount: manager.familiesCount });
+      setDeleteConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteManagerMutation.mutate(deleteTarget.id);
+  };
+
+  const handleSaveManager = (data: { name: string }) => {
+    if (selectedManagerId) {
+      editManagerMutation.mutate({ id: selectedManagerId, name: data.name });
+    }
   };
 
   const childrenTableData = children.map(child => {
@@ -354,7 +440,8 @@ export default function BossDashboard({
                 <ManagerTable
                   managers={managerTableData}
                   language={language}
-                  hideActions={true}
+                  onEdit={handleEditManager}
+                  onDelete={handleDeleteClick}
                 />
               </CardContent>
             </Card>
@@ -421,6 +508,55 @@ export default function BossDashboard({
           language={language}
         />
       )}
+
+      {selectedManagerId && (() => {
+        const selectedManager = managers.find(m => m.id === selectedManagerId);
+        return selectedManager ? (
+          <EditManagerDialog
+            open={editManagerDialogOpen}
+            onOpenChange={setEditManagerDialogOpen}
+            language={language}
+            currentName={selectedManager.name}
+            currentEmail={selectedManager.username}
+            onSave={handleSaveManager}
+          />
+        ) : null;
+      })()}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent data-testid="dialog-delete-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'zh-TW' ? '確認刪除管理師' : 'Confirm Delete Manager'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'zh-TW' 
+                ? `確定要刪除管理師「${deleteTarget?.name}」嗎？此操作無法復原。`
+                : `Are you sure you want to delete manager "${deleteTarget?.name}"? This action cannot be undone.`}
+              {deleteTarget && deleteTarget.familiesCount > 0 && (
+                <p className="mt-2 font-semibold text-destructive">
+                  {language === 'zh-TW' 
+                    ? `無法刪除有 ${deleteTarget.familiesCount} 個家庭的管理師。請先刪除或重新分配家庭。`
+                    : `Cannot delete manager with ${deleteTarget.familiesCount} families. Please delete or reassign families first.`}
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              {language === 'zh-TW' ? '取消' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteTarget ? deleteTarget.familiesCount > 0 : false}
+              data-testid="button-confirm-delete"
+            >
+              {language === 'zh-TW' ? '刪除' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
