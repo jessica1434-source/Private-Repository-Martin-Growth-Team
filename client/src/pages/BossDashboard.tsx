@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
 import TrendChart from "@/components/TrendChart";
@@ -42,6 +52,8 @@ export default function BossDashboard({
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
   const [promoteManagerDialogOpen, setPromoteManagerDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{id: string; name: string} | null>(null);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
   const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedChildId, setSelectedChildId] = useState<string>('');
@@ -165,6 +177,29 @@ export default function BossDashboard({
     },
   });
 
+  const deleteManagerMutation = useMutation({
+    mutationFn: async (managerId: string) => {
+      return await apiRequest('DELETE', `/api/managers/${managerId}`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
+      toast({
+        title: language === 'zh-TW' ? '刪除成功' : 'Manager Deleted',
+        description: language === 'zh-TW' ? '管理師已刪除' : 'Manager has been deleted successfully',
+      });
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleViewFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setViewFamilyDetailOpen(true);
@@ -173,6 +208,20 @@ export default function BossDashboard({
   const handleEditManager = (managerId: string) => {
     setSelectedManagerId(managerId);
     setPromoteManagerDialogOpen(true);
+  };
+
+  const handleDeleteManager = (managerId: string) => {
+    const manager = managers.find(m => m.id === managerId);
+    if (manager) {
+      setDeleteTarget({ id: managerId, name: manager.name });
+      setDeleteConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTarget) {
+      deleteManagerMutation.mutate(deleteTarget.id);
+    }
   };
 
   const handleViewHistory = (childId: string) => {
@@ -390,6 +439,7 @@ export default function BossDashboard({
                   managers={managerTableData}
                   language={language}
                   onEdit={handleEditManager}
+                  onDelete={handleDeleteManager}
                 />
               </CardContent>
             </Card>
@@ -470,6 +520,38 @@ export default function BossDashboard({
           language={language}
         />
       )}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent data-testid="dialog-delete-confirm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {language === 'zh-TW' ? '確認刪除' : 'Confirm Deletion'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {language === 'zh-TW' 
+                ? `確定要刪除管理師「${deleteTarget?.name}」嗎？此操作無法復原。`
+                : `Are you sure you want to delete manager "${deleteTarget?.name}"? This action cannot be undone.`}
+              <p className="mt-2 font-semibold text-destructive">
+                {language === 'zh-TW' 
+                  ? '注意：刪除管理師將會影響其負責的家庭資料。'
+                  : 'Warning: Deleting this manager will affect the families they manage.'}
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">
+              {language === 'zh-TW' ? '取消' : 'Cancel'}
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {language === 'zh-TW' ? '刪除' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
