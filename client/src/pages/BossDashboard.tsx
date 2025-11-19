@@ -1,20 +1,10 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Baby, Users, AlertTriangle, CheckCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import MetricCard from "@/components/MetricCard";
 import PerformanceChart from "@/components/PerformanceChart";
 import TrendChart from "@/components/TrendChart";
@@ -23,12 +13,9 @@ import FamilyTable from "@/components/FamilyTable";
 import ManagerTable from "@/components/ManagerTable";
 import ChildrenTable from "@/components/ChildrenTable";
 import FamilyDetailDialog from "@/components/FamilyDetailDialog";
-import PromoteManagerDialog from "@/components/PromoteManagerDialog";
 import GrowthHistoryDialog from "@/components/GrowthHistoryDialog";
 import LanguageToggle from "@/components/LanguageToggle";
 import ThemeToggle from "@/components/ThemeToggle";
-import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Language } from "@/lib/i18n";
 import { useTranslation } from "@/lib/i18n";
 import type { Manager, Family, Child, GrowthRecord } from "@shared/schema";
@@ -47,15 +34,10 @@ export default function BossDashboard({
   onLogout
 }: BossDashboardProps) {
   const t = useTranslation(language);
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<'overview' | 'managers' | 'families' | 'children'>('overview');
   const [viewFamilyDetailOpen, setViewFamilyDetailOpen] = useState(false);
-  const [promoteManagerDialogOpen, setPromoteManagerDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{id: string; name: string} | null>(null);
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>('');
-  const [selectedManagerId, setSelectedManagerId] = useState<string>('');
   const [selectedChildId, setSelectedChildId] = useState<string>('');
 
   const { data: managers = [], isLoading: managersLoading } = useQuery<Manager[]>({
@@ -154,74 +136,9 @@ export default function BossDashboard({
     };
   });
 
-  const updateManagerMutation = useMutation({
-    mutationFn: async (data: { managerId: string; newRole: string; supervisorId?: string | null }) => {
-      await apiRequest('PATCH', `/api/managers/${data.managerId}`, {
-        role: data.newRole,
-        supervisorId: data.supervisorId,
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
-      toast({
-        title: language === 'zh-TW' ? '更新成功' : 'Update Successful',
-        description: language === 'zh-TW' ? '管理師角色已更新' : 'Manager role updated',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: language === 'zh-TW' ? '更新失敗' : 'Update Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteManagerMutation = useMutation({
-    mutationFn: async (managerId: string) => {
-      return await apiRequest('DELETE', `/api/managers/${managerId}`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/managers'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/families'] });
-      toast({
-        title: language === 'zh-TW' ? '刪除成功' : 'Manager Deleted',
-        description: language === 'zh-TW' ? '管理師已刪除' : 'Manager has been deleted successfully',
-      });
-      setDeleteConfirmOpen(false);
-      setDeleteTarget(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: language === 'zh-TW' ? '刪除失敗' : 'Delete Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
   const handleViewFamily = (familyId: string) => {
     setSelectedFamilyId(familyId);
     setViewFamilyDetailOpen(true);
-  };
-
-  const handleEditManager = (managerId: string) => {
-    setSelectedManagerId(managerId);
-    setPromoteManagerDialogOpen(true);
-  };
-
-  const handleDeleteManager = (managerId: string) => {
-    const manager = managers.find(m => m.id === managerId);
-    if (manager) {
-      setDeleteTarget({ id: managerId, name: manager.name });
-      setDeleteConfirmOpen(true);
-    }
-  };
-
-  const handleConfirmDelete = () => {
-    if (deleteTarget) {
-      deleteManagerMutation.mutate(deleteTarget.id);
-    }
   };
 
   const handleViewHistory = (childId: string) => {
@@ -255,7 +172,6 @@ export default function BossDashboard({
   }, {} as { [childId: string]: typeof growthRecords });
   const selectedFamilyManager = managers.find(m => m.id === selectedFamily?.managerId);
 
-  const selectedManager = managers.find(m => m.id === selectedManagerId);
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedChildRecords = growthRecords.filter(r => r.childId === selectedChildId);
 
@@ -438,8 +354,7 @@ export default function BossDashboard({
                 <ManagerTable
                   managers={managerTableData}
                   language={language}
-                  onEdit={handleEditManager}
-                  onDelete={handleDeleteManager}
+                  hideActions={true}
                 />
               </CardContent>
             </Card>
@@ -496,20 +411,6 @@ export default function BossDashboard({
         />
       )}
 
-      {selectedManager && (
-        <PromoteManagerDialog
-          open={promoteManagerDialogOpen}
-          onOpenChange={setPromoteManagerDialogOpen}
-          language={language}
-          managerId={selectedManager.id}
-          currentName={selectedManager.name}
-          currentRole={selectedManager.role}
-          currentSupervisorId={selectedManager.supervisorId}
-          managers={managers}
-          onSave={(data) => updateManagerMutation.mutate(data)}
-        />
-      )}
-
       {selectedChild && (
         <GrowthHistoryDialog
           open={historyDialogOpen}
@@ -520,38 +421,6 @@ export default function BossDashboard({
           language={language}
         />
       )}
-
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent data-testid="dialog-delete-confirm">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {language === 'zh-TW' ? '確認刪除' : 'Confirm Deletion'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {language === 'zh-TW' 
-                ? `確定要刪除管理師「${deleteTarget?.name}」嗎？此操作無法復原。`
-                : `Are you sure you want to delete manager "${deleteTarget?.name}"? This action cannot be undone.`}
-              <p className="mt-2 font-semibold text-destructive">
-                {language === 'zh-TW' 
-                  ? '注意：刪除管理師將會影響其負責的家庭資料。'
-                  : 'Warning: Deleting this manager will affect the families they manage.'}
-              </p>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">
-              {language === 'zh-TW' ? '取消' : 'Cancel'}
-            </AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              data-testid="button-confirm-delete"
-            >
-              {language === 'zh-TW' ? '刪除' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
