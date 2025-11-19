@@ -6,6 +6,29 @@ A bilingual (Traditional Chinese/English) dashboard system for tracking and mana
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (November 19, 2025)
+
+### CASCADE DELETE AND DATA PROTECTION
+**Problem Solved**: Previously, managers/families/children with data could not be deleted due to missing foreign key constraints.
+
+**Implementation**:
+- Added `onDelete` behaviors to all foreign key references:
+  - `managers.supervisorId`: `onDelete: 'set null'` - Subordinates remain when supervisor deleted
+  - `families.managerId`: `onDelete: 'restrict'` - **Prevents deleting managers with families** (protects health records)
+  - `children.familyId`: `onDelete: 'cascade'` - Children deleted when family deleted
+  - `growthRecords.childId`: `onDelete: 'cascade'` - Records deleted when child deleted
+
+**Manager Deletion Protection**:
+- Boss can only delete managers with 0 families
+- System checks for families before deletion
+- Error message if families exist: "無法刪除有 X 個家庭的管理師。請先刪除或重新分配家庭。"
+- Prevents catastrophic health record data loss
+
+**Automatic Cascade Behavior**:
+- Deleting family → automatically deletes all children and growth records
+- Deleting child → automatically deletes all growth records
+- Deleting supervisor → subordinates remain (supervisorId set to null)
+
 ## System Architecture
 
 ### Frontend Architecture
