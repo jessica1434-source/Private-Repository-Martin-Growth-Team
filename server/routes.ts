@@ -286,16 +286,25 @@ export function registerRoutes(app: Express): Server {
       
       // Boss can edit any manager and change role/supervisorId
       else if (currentManager.role === 'boss') {
-        // Prevent boss from changing their own role to prevent system lockout
-        if (targetManagerId === currentManager.id && req.body.role && req.body.role !== currentManager.role) {
-          return res.status(403).json({ 
-            message: "Access denied: Cannot change your own role to ensure system has at least one boss / 無權限：無法更改自己的角色以確保系統至少保留一位老闆" 
-          });
+        // Prevent boss from changing their own role or supervisor to prevent system lockout
+        if (targetManagerId === currentManager.id) {
+          // Check if trying to change role (including null or any different value)
+          if ('role' in req.body && req.body.role !== currentManager.role) {
+            return res.status(403).json({ 
+              message: "Access denied: Cannot change your own role to ensure system has at least one boss / 無權限：無法更改自己的角色以確保系統至少保留一位老闆" 
+            });
+          }
+          // Check if trying to change supervisor (which is meaningless for boss but block it anyway)
+          if ('supervisorId' in req.body && req.body.supervisorId !== currentManager.supervisorId) {
+            return res.status(403).json({ 
+              message: "Access denied: Cannot change your own supervisor to ensure system integrity / 無權限：無法更改自己的主管以確保系統完整性" 
+            });
+          }
         }
         
         if (req.body.name) updateData.name = req.body.name;
-        if (req.body.role) updateData.role = req.body.role;
-        if (req.body.supervisorId !== undefined) updateData.supervisorId = req.body.supervisorId;
+        if ('role' in req.body && req.body.role) updateData.role = req.body.role;
+        if ('supervisorId' in req.body) updateData.supervisorId = req.body.supervisorId;
       }
       
       const updatedManager = await storage.updateManager(targetManagerId, updateData);
