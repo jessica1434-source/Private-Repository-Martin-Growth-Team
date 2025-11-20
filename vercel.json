@@ -1,14 +1,8 @@
 {
-  "builds": [
-    {
-      "src": "dist/index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/index.js" // 👈 關鍵修正：簡化路徑
+      "destination": "/dist/index.js"
     },
     {
       "source": "/(.*)",
