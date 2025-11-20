@@ -816,6 +816,28 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Analytics endpoint for growth trends by country
+  app.get('/api/analytics/growth-trends-by-country', isAuthenticated, async (req: any, res) => {
+    try {
+      const manager = getCurrentManager(req);
+      
+      if (!manager) {
+        return res.status(403).json({ message: "Access denied: No manager profile found" });
+      }
+      
+      // Only boss can access cross-country analytics
+      if (manager.role !== 'boss') {
+        return res.status(403).json({ message: "Access denied: Only boss can access cross-country analytics / 無權限：只有老闆可以訪問跨國分析" });
+      }
+      
+      const trends = await storage.getGrowthTrendsByCountry();
+      res.json(trends);
+    } catch (error) {
+      console.error("Error fetching growth trends by country:", error);
+      res.status(500).json({ message: "Failed to fetch growth trends by country" });
+    }
+  });
+
   app.post('/api/growth-records', isAuthenticated, async (req: any, res) => {
     try {
       const manager = getCurrentManager(req);
