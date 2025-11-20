@@ -6,9 +6,29 @@ A bilingual (Traditional Chinese/English) dashboard system for tracking and mana
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (November 19, 2025)
+## Recent Changes
 
-### CASCADE DELETE AND DATA PROTECTION
+### November 20, 2025: Dynamic Cross-Country Growth Trends Analytics
+
+**Feature**: Replaced hardcoded growth trend charts with dynamic data-driven analytics across all countries.
+
+**Implementation**:
+- **Backend**: Added `DatabaseStorage.getGrowthTrendsByCountry()` method using SQL GROUP BY aggregation to calculate monthly average height/weight per country from actual growth records
+- **API Endpoint**: Created `/api/analytics/growth-trends-by-country` with role-based filtering:
+  - Boss: Views all countries' data
+  - Supervisor: Views data for subordinate managers' countries
+  - Manager: Views data for own assigned families' countries
+- **Frontend**: Refactored `TrendChart` component to dynamically render tabs for any countries present in database (previously hardcoded Taiwan/Singapore/Malaysia/Brunei)
+- **UX Enhancement**: Added month formatting (e.g., "11月" in Chinese, "Nov" in English) and empty state handling
+
+**Technical Details**:
+- Single SQL query avoids N+1 patterns by joining `growthRecords → children → families`
+- Returns data in format: `Record<string, Array<{ month: string; height: number; weight: number }>>`
+- Chart gracefully handles any number of countries and missing data scenarios
+- Uses inline grid styles to support dynamic tab counts (avoiding Tailwind CSS limitations)
+
+### November 19, 2025: Cascade Delete and Data Protection
+
 **Problem Solved**: Previously, managers/families/children with data could not be deleted due to missing foreign key constraints.
 
 **Implementation**:
