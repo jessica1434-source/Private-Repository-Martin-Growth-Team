@@ -8,7 +8,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/dist/index.js"
+      "destination": "/index.js" // 👈 關鍵修正：簡化路徑
     },
     {
       "source": "/(.*)",
