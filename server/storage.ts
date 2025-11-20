@@ -60,6 +60,9 @@ export interface IStorage {
   createGrowthRecord(record: InsertGrowthRecord): Promise<GrowthRecord>;
   updateGrowthRecord(id: string, record: Partial<InsertGrowthRecord>): Promise<GrowthRecord>;
   deleteGrowthRecord(id: string): Promise<void>;
+  
+  // Analytics operations
+  getGrowthTrendsByCountry(): Promise<Record<string, Array<{ month: string; height: number; weight: number }>>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -290,6 +293,54 @@ export class DatabaseStorage implements IStorage {
 
   async deleteGrowthRecord(id: string): Promise<void> {
     await db.delete(growthRecords).where(eq(growthRecords.id, id));
+  }
+
+  async getGrowthTrendsByCountry(): Promise<Record<string, Array<{ month: string; height: number; weight: number }>>> {
+    // Get all growth records with country information via joins
+    const records = await db
+      .select({
+        country: families.country,
+        recordDate: growthRecords.recordDate,
+        height: growthRecords.height,
+        weight: growthRecords.weight,
+      })
+      .from(growthRecords)
+      .innerJoin(children, eq(growthRecords.childId, children.id))
+      .innerJoin(families, eq(children.familyId, families.id));
+
+    // Group by country and month, calculate averages
+    const trendsByCountry: Record<string, Record<string, { heights: number[]; weights: number[] }>> = {};
+    
+    for (const record of records) {
+      const date = new Date(record.recordDate);
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!trendsByCountry[record.country]) {
+        trendsByCountry[record.country] = {};
+      }
+      
+      if (!trendsByCountry[record.country][month]) {
+        trendsByCountry[record.country][month] = { heights: [], weights: [] };
+      }
+      
+      trendsByCountry[record.country][month].heights.push(record.height);
+      trendsByCountry[record.country][month].weights.push(record.weight);
+    }
+
+    // Calculate averages and format for response
+    const result: Record<string, Array<{ month: string; height: number; weight: number }>> = {};
+    
+    for (const [country, monthsData] of Object.entries(trendsByCountry)) {
+      result[country] = Object.entries(monthsData)
+        .map(([month, data]) => ({
+          month,
+          height: Math.round((data.heights.reduce((a, b) => a + b, 0) / data.heights.length) * 10) / 10,
+          weight: Math.round((data.weights.reduce((a, b) => a + b, 0) / data.weights.length) * 10) / 10,
+        }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+    }
+
+    return result;
   }
 }
 
